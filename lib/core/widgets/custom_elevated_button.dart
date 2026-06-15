@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../utils/colors_manager.dart';
+import '../theme/cubit/theme_cubit.dart';
 
 class CustomElevatedButton extends StatelessWidget {
   final String text;
@@ -14,13 +16,15 @@ class CustomElevatedButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
+
     return SizedBox(
       width: double.infinity,
       height: 48.h,
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: ColorsManager.black,
+          backgroundColor: isDarkMode ? ColorsManager.primaryTeal : ColorsManager.black,
           foregroundColor: ColorsManager.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8.r),

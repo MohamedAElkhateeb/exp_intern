@@ -1,12 +1,13 @@
-// lib/core/utils/custom_dialogs.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/cubit/theme_cubit.dart';
+import '../../../../core/utils/colors_manager.dart';
 import '../../../../core/utils/locale_keys.g.dart';
 import '../../../../core/utils/routes_manager.dart';
 import '../../../../core/widgets/custom_elevated_button.dart';
-
 
 class CustomDialogs {
   static Future<void> showSuccessDialog({
@@ -16,6 +17,8 @@ class CustomDialogs {
     String? buttonText,
     VoidCallback? onButtonPressed,
   }) {
+    final isDarkMode = context.read<ThemeCubit>().isDarkMode;
+
     return showDialog(
       context: context,
       barrierDismissible: false,
@@ -24,14 +27,20 @@ class CustomDialogs {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12.r),
           ),
+          backgroundColor: isDarkMode ? ColorsManager.darkSurface : ColorsManager.white,
           title: Text(
             title,
-            style: LightAppStyle.title.copyWith(fontSize: 18.sp),
+            style: LightAppStyle.title.copyWith(
+              fontSize: 18.sp,
+              color: isDarkMode ? ColorsManager.white : ColorsManager.black,
+            ),
             textAlign: TextAlign.center,
           ),
           content: Text(
             message,
-            style: LightAppStyle.subtitle,
+            style: LightAppStyle.subtitle.copyWith(
+              color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
+            ),
             textAlign: TextAlign.center,
           ),
           actions: [
@@ -69,7 +78,7 @@ class CustomDialogs {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.red,
+        backgroundColor: ColorsManager.error,
         behavior: SnackBarBehavior.floating,
       ),
     );
@@ -79,7 +88,7 @@ class CustomDialogs {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: Colors.green,
+        backgroundColor: ColorsManager.primaryTeal,
         behavior: SnackBarBehavior.floating,
       ),
     );

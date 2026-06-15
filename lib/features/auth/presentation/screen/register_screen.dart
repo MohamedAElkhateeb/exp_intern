@@ -1,8 +1,10 @@
 // features/auth/presentation/screens/register_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/cubit/theme_cubit.dart';
 import '../../../../core/utils/colors_manager.dart';
 import '../../../../core/utils/routes_manager.dart';
 import '../../../../core/utils/locale_keys.g.dart';
@@ -25,11 +27,14 @@ class RegisterScreen extends StatelessWidget {
     final emailController = TextEditingController();
     final passwordController = TextEditingController();
     final confirmPasswordController = TextEditingController();
+    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: ColorsManager.white,
+      backgroundColor: isDarkMode ? ColorsManager.darkBackground : ColorsManager.white,
       appBar: AppBar(
-        backgroundColor: ColorsManager.white,
+        backgroundColor: isDarkMode ? ColorsManager.darkSurface : ColorsManager.white,
+        foregroundColor: isDarkMode ? ColorsManager.white : ColorsManager.black,
+        elevation: 0,
       ),
       body: SafeArea(
         child: Column(
@@ -44,11 +49,18 @@ class RegisterScreen extends StatelessWidget {
                     children: [
                       CustomLogo(fontSize: 50.sp),
                       SizedBox(height: 30.h),
-                      Text(LocaleKeys.register_title.tr(), style: LightAppStyle.title),
+                      Text(
+                        LocaleKeys.register_title.tr(),
+                        style: LightAppStyle.title.copyWith(
+                          color: isDarkMode ? ColorsManager.white : ColorsManager.black,
+                        ),
+                      ),
                       SizedBox(height: 8.h),
                       Text(
                         LocaleKeys.register_subtitle.tr(),
-                        style: LightAppStyle.subtitle,
+                        style: LightAppStyle.subtitle.copyWith(
+                          color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                       SizedBox(height: 30.h),

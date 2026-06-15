@@ -1,8 +1,10 @@
 // features/auth/presentation/screens/forget_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/cubit/theme_cubit.dart';
 import '../../../../core/utils/colors_manager.dart';
 import '../../../../core/utils/routes_manager.dart';
 import '../../../../core/utils/locale_keys.g.dart';
@@ -19,9 +21,10 @@ class ForgetPasswordScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final formKey = GlobalKey<FormState>();
     final phoneController = TextEditingController();
+    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: ColorsManager.white,
+      backgroundColor: isDarkMode ? ColorsManager.darkBackground : ColorsManager.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -33,11 +36,18 @@ class ForgetPasswordScreen extends StatelessWidget {
                 SizedBox(height: 80.h),
                 CustomLogo(fontSize: 50.sp),
                 SizedBox(height: 60.h),
-                Text(LocaleKeys.forgot_password_title.tr(), style: LightAppStyle.title),
+                Text(
+                  LocaleKeys.forgot_password_title.tr(),
+                  style: LightAppStyle.title.copyWith(
+                    color: isDarkMode ? ColorsManager.white : ColorsManager.black,
+                  ),
+                ),
                 SizedBox(height: 8.h),
                 Text(
                   LocaleKeys.forgot_password_subtitle.tr(),
-                  style: LightAppStyle.subtitle,
+                  style: LightAppStyle.subtitle.copyWith(
+                    color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 40.h),

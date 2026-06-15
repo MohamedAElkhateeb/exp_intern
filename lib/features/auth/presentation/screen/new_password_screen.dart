@@ -1,8 +1,10 @@
 // features/auth/presentation/screens/new_password_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:easy_localization/easy_localization.dart';
 import '../../../../core/theme/app_styles.dart';
+import '../../../../core/theme/cubit/theme_cubit.dart';
 import '../../../../core/utils/colors_manager.dart';
 import '../../../../core/utils/locale_keys.g.dart';
 import '../../../../core/utils/validators.dart';
@@ -49,9 +51,10 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final String phoneNumber = ModalRoute.of(context)?.settings.arguments as String? ?? "012345678";
+    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
 
     return Scaffold(
-      backgroundColor: ColorsManager.white,
+      backgroundColor: isDarkMode ? ColorsManager.darkBackground : ColorsManager.white,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: EdgeInsets.symmetric(horizontal: 24.w),
@@ -65,13 +68,17 @@ class _NewPasswordScreenState extends State<NewPasswordScreen> {
                 SizedBox(height: 40.h),
                 Text(
                   LocaleKeys.new_password_title.tr(),
-                  style: LightAppStyle.title,
+                  style: LightAppStyle.title.copyWith(
+                    color: isDarkMode ? ColorsManager.white : ColorsManager.black,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 12.h),
                 Text(
                   '${LocaleKeys.verification_code_sent.tr()} $phoneNumber',
-                  style: LightAppStyle.subtitle,
+                  style: LightAppStyle.subtitle.copyWith(
+                    color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
+                  ),
                   textAlign: TextAlign.center,
                 ),
                 SizedBox(height: 32.h),

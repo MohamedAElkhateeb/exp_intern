@@ -57,5 +57,34 @@ abstract class  LocaleKeys {
   static const password_required = 'password_required';
   static const confirm_password_required = 'confirm_password_required';
   static const name_min_length = 'name_min_length';
+  static const welcome_greeting = 'welcome_greeting';
+  static const dear_customer = 'dear_customer';
+  static const custom_design_for_offers = 'custom_design_for_offers';
+  static const special_offer = 'special_offer';
+  static const featured_services = 'featured_services';
+  static const indispensable_services = 'indispensable_services';
+  static const hourly_service = 'hourly_service';
+  static const hourly_service_desc = 'hourly_service_desc';
+  static const residential_service = 'residential_service';
+  static const residential_service_desc = 'residential_service_desc';
+  static const home = 'home';
+  static const contracts = 'contracts';
+  static const requests = 'requests';
+  static const offers = 'offers';
+  static const contact_us = 'contact_us';
+  static const dashboard = 'dashboard';
+  static const notifications = 'notifications';
+  static const my_requests = 'my_requests';
+  static const individual_requests = 'individual_requests';
+  static const my_visits = 'my_visits';
+  static const support_tickets = 'support_tickets';
+  static const wallet_balance = 'wallet_balance';
+  static const sar = 'sar';
+  static const english = 'english';
+  static const dark_mode = 'dark_mode';
+  static const logout_confirmation = 'logout_confirmation';
+  static const cancel = 'cancel';
+  static const logout = 'logout';
+  static const contact_us_message = 'contact_us_message';
 
 }
