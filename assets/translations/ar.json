@@ -81,5 +81,6 @@
   "logout_confirmation": "هل أنت متأكد من تسجيل الخروج؟",
   "cancel": "إلغاء",
   "logout": "تسجيل الخروج",
-  "contact_us_message": "نسعد بتواصلكم معنا من خلال"
+  "contact_us_message": "نسعد بتواصلكم معنا من خلال",
+  "login_success": "تم تسجيل الدخول بنجاح"
 }

@@ -84,5 +84,7 @@
   "logout_confirmation": "Are you sure you want to logout?",
   "cancel": "Cancel",
   "logout": "Logout",
-  "contact_us_message": "We’re pleased to hear from you via"
+  "contact_us_message": "We’re pleased to hear from you via",
+  "login_success": "Login successful"
+
 }

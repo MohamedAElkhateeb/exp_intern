@@ -62,7 +62,6 @@ abstract class  LocaleKeys {
   static const custom_design_for_offers = 'custom_design_for_offers';
   static const special_offer = 'special_offer';
   static const featured_services = 'featured_services';
-  static const login_success = 'login_success';
   static const indispensable_services = 'indispensable_services';
   static const hourly_service = 'hourly_service';
   static const hourly_service_desc = 'hourly_service_desc';
@@ -87,5 +86,6 @@ abstract class  LocaleKeys {
   static const cancel = 'cancel';
   static const logout = 'logout';
   static const contact_us_message = 'contact_us_message';
+  static const login_success = 'login_success';
 
 }

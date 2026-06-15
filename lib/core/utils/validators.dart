@@ -44,19 +44,16 @@ class Validators {
     return null;
   }
 
-  // فاليديشن رقم الموبايل المصري
   static String? phone(String? value) {
     if (value == null || value.trim().isEmpty) {
       return LocaleKeys.phone_required.tr();
     }
-    final phoneRegex = RegExp(r'^(01)[0-9]{9}$');
+    final phoneRegex = RegExp(r'^[0-9]{9,15}$');
     if (!phoneRegex.hasMatch(value.trim())) {
       return LocaleKeys.enter_valid_phone.tr();
     }
     return null;
   }
-
-  // فاليديشن كلمة المرور
   static String? password(String? value) {
     if (value == null || value.isEmpty) {
       return LocaleKeys.password_required.tr();

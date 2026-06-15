@@ -1,8 +1,11 @@
+// core/utils/routes_manager.dart
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:exp_intern/core/di/service_locator.dart';
+import 'package:exp_intern/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:exp_intern/features/auth/presentation/screen/forget_screen.dart';
 import 'package:exp_intern/features/auth/presentation/screen/login_screen.dart';
 import 'package:exp_intern/features/auth/presentation/screen/register_screen.dart';
-import 'package:flutter/material.dart';
-
 import '../../features/auth/presentation/screen/new_password_screen.dart';
 import '../../features/home/presentation/screen/home_screen.dart';
 
@@ -16,7 +19,13 @@ class RoutesManager {
   static Route<dynamic>? router(RouteSettings settings) {
     switch (settings.name) {
       case logIn:
-        return MaterialPageRoute(builder: (_) => const LoginScreen());
+        return MaterialPageRoute(
+          builder: (_) => BlocProvider(
+            // هنا بنسحب الـ نُسخة الجاهزة والمحقونة من GetIt مباشرة ونعطيها للشاشة!
+            create: (context) => sl<AuthCubit>(),
+            child: const LoginScreen(),
+          ),
+        );
       case register:
         return MaterialPageRoute(builder: (_) => const RegisterScreen());
       case forgetPassword:
