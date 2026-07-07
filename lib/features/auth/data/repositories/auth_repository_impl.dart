@@ -1,16 +1,25 @@
+import 'package:dartz/dartz.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:exp_intern/core/storage/token_storage.dart';
-import '../../domin/repositories/auth_repository.dart';
+import 'package:exp_intern/core/utils/locale_keys.g.dart';
+import 'package:exp_intern/features/auth/domain/entities/user_entity.dart';
+import 'package:exp_intern/features/auth/domain/repositories/auth_repository.dart';
+import 'package:injectable/injectable.dart';
+import '../../../../core/errors/failures.dart';
+import '../../../../core/errors/error_handler.dart';
+import '../../../../core/utils/base_model.dart';
 import '../data_source/auth_remote_data_source.dart';
 import '../model/user_model.dart';
 
+@LazySingleton(as: AuthRepository)
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource _remoteDataSource;
-  final TokenStorage _tokenStorage = TokenStorage();
+  final TokenStorage _tokenStorage;
 
-  AuthRepositoryImpl(this._remoteDataSource);
+  AuthRepositoryImpl(this._remoteDataSource, this._tokenStorage);
 
   @override
-  Future<Map<String, dynamic>> login({
+  Future<Either<Failure, UserEntity>> login({
     required String userName,
     required String password,
     bool rememberMe = true,
@@ -24,36 +33,32 @@ class AuthRepositoryImpl implements AuthRepository {
         autoFillCode: autoFillCode,
       );
 
-      // بنحول الريسبونس مباشرة لـ UserModel مهما كان الـ HTTP Status Code (سواء 200 أو 201 أو غيره)
-      final userModel = UserModel.fromJson(response.data);
+      final responseModel = BaseResponse<UserModel>.fromJson(
+        response.data,
+        (json) => UserModel.fromJson(json as Map<String, dynamic>),
+      );
 
-      // الفحص هنا معتمد تماماً على الـ status الداخلية اللي باعتها الباك إند جوه الـ JSON للنجاح
-      if (userModel.status == 200 && userModel.loginData != null) {
-        final loginData = userModel.loginData!;
-        final token = loginData.accessToken;
+      if (responseModel.data != null) {
+        final userModel = responseModel.data!;
 
-        if (token != null && token.isNotEmpty) {
-          await _tokenStorage.saveTokens(token);
+        if (userModel.accessToken != null &&
+            userModel.accessToken!.isNotEmpty) {
+          await _tokenStorage.saveTokens(
+            accessToken: userModel.accessToken!,
+            crmUserId: userModel.crmUserId,
+          );
         }
 
-        return {
-          'success': true,
-          'userEntity': userModel,
-        };
+        return Right(userModel);
+      } else {
+        return Left(
+          ServerFailure(
+            message: responseModel.message ?? LocaleKeys.data_error.tr(),
+          ),
+        );
       }
-
-      // في حالة الفشل (الـ status مش كود النجاح الداخلي، زي الـ 500 اللي بيبعتها لما البيانات تكون غلط)
-      // الكود هنا هيقرا الـ message اللي مبعوتة من الباك إند في الريسبونس بالظبط ويعرضها لليوزر
-      return {
-        'success': false,
-        'message': userModel.message ?? 'حدث خطأ ما، يرجى المحاولة لاحقاً',
-      };
-
     } catch (e) {
-      return {
-        'success': false,
-        'message': 'مشكلة في الشبكة، تحقق من اتصالك بالإنترنت',
-      };
+      return Left(ErrorHandler.handleException(e));
     }
   }
 

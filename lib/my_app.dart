@@ -3,17 +3,25 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
+import 'core/di/service_locator.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/cubit/theme_cubit.dart';
+import 'core/utils/endpoint_manger.dart';
 import 'core/utils/routes_manager.dart';
+import 'features/dynamic_steps/presentation/cubit/dynamic_steps_cubit.dart';
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => ThemeCubit(),
+    EndpointsManager.init(context);
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => sl<DynamicStepsCubit>()),
+        BlocProvider(create: (context) => ThemeCubit()),
+      ],
       child: ScreenUtilInit(
         designSize: const Size(430, 932),
         minTextAdapt: true,
@@ -36,9 +44,7 @@ class MyApp extends StatelessWidget {
                 onGenerateRoute: RoutesManager.router,
                 onUnknownRoute: (_) => MaterialPageRoute(
                   builder: (_) => const Scaffold(
-                    body: Center(
-                      child: Text("Page not found"),
-                    ),
+                    body: Center(child: Text("Page not found")),
                   ),
                 ),
                 initialRoute: RoutesManager.logIn,

@@ -47,8 +47,9 @@ class _CustomCarouselState extends State<CustomCarousel> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     return Column(
       children: [
         CarouselSlider(
@@ -66,12 +67,18 @@ class _CustomCarouselState extends State<CustomCarousel> {
           items: _items.map((item) => _buildSlide(item, isDarkMode)).toList(),
         ),
         if (widget.showIndicator)
-          Padding(padding: const EdgeInsets.all(9.0), child: _buildIndicator(isDarkMode)),
+          Padding(
+            padding: const EdgeInsets.all(9.0),
+            child: _buildIndicator(isDarkMode),
+          ),
       ],
     );
   }
 
   Widget _buildSlide(Map<String, dynamic> item, bool isDarkMode) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     return Container(
       margin: EdgeInsets.all(5.w),
       width: double.infinity,
@@ -82,11 +89,17 @@ class _CustomCarouselState extends State<CustomCarousel> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(item['icon'], size: 40.sp, color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyBorder),
+          Icon(
+            item['icon'],
+            size: 40.sp,
+            color: isDarkMode
+                ? ColorsManager.white70
+                : ColorsManager.greyBorder,
+          ),
           SizedBox(height: 16.h),
           Text(
             item['title'],
-            style: LightAppStyle.title.copyWith(
+            style: textTheme.displayLarge?.copyWith(
               fontSize: 16.sp,
               color: isDarkMode ? ColorsManager.white : ColorsManager.black,
             ),
@@ -95,8 +108,10 @@ class _CustomCarouselState extends State<CustomCarousel> {
           SizedBox(height: 8.h),
           Text(
             item['subtitle'],
-            style: LightAppStyle.subtitle.copyWith(
-              color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
+            style: textTheme.displayMedium?.copyWith(
+              color: isDarkMode
+                  ? ColorsManager.white70
+                  : ColorsManager.greyText,
             ),
             textAlign: TextAlign.center,
           ),
@@ -116,8 +131,12 @@ class _CustomCarouselState extends State<CustomCarousel> {
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: _currentIndex == index
-                ? (isDarkMode ? ColorsManager.primaryTeal : ColorsManager.greyBorder)
-                : (isDarkMode ? ColorsManager.white70.withOpacity(0.3) : ColorsManager.greyBorder.withOpacity(0.3)),
+                ? (isDarkMode
+                      ? ColorsManager.primaryTeal
+                      : ColorsManager.greyBorder)
+                : (isDarkMode
+                      ? ColorsManager.white70.withOpacity(0.3)
+                      : ColorsManager.greyBorder.withOpacity(0.3)),
           ),
         );
       }),

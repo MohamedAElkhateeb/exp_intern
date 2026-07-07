@@ -12,15 +12,17 @@ class CustomDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     final themeCubit = context.watch<ThemeCubit>();
-    final isDarkMode = themeCubit.isDarkMode;
 
     return Drawer(
       child: Container(
         color: isDarkMode ? ColorsManager.darkBackground : ColorsManager.white,
         child: Column(
           children: [
-            _buildDrawerHeader(isDarkMode),
+            _buildDrawerHeader(isDarkMode, textTheme),
             Expanded(
               child: ListView(
                 padding: EdgeInsets.symmetric(vertical: 10.h),
@@ -29,64 +31,74 @@ class CustomDrawer extends StatelessWidget {
                     title: LocaleKeys.dashboard.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.notifications.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.contracts.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.my_requests.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.individual_requests.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.my_visits.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.support_tickets.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.contact_us.tr(),
                     onTap: () => Navigator.pop(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.english.tr(),
                     onTap: () => _showLanguageDialog(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                   _buildDrawerItem(
                     title: LocaleKeys.logout.tr(),
                     isLogout: true,
                     onTap: () => _showLogoutDialog(context),
                     isDarkMode: isDarkMode,
+                    textTheme: textTheme,
                   ),
                 ],
               ),
             ),
-            _buildDarkModeToggle(context, themeCubit, isDarkMode),
+            _buildDarkModeToggle(context, themeCubit, isDarkMode, textTheme),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDrawerHeader(bool isDarkMode) {
+  Widget _buildDrawerHeader(bool isDarkMode, TextTheme textTheme) {
     return Container(
       width: double.infinity,
       padding: EdgeInsets.only(top: 60.h, left: 24.w, right: 24.w, bottom: 16.h),
@@ -98,7 +110,7 @@ class CustomDrawer extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: Text(
               'محمد مصطفى',
-              style: LightAppStyle.title.copyWith(
+              style: textTheme.displayLarge?.copyWith(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
                 color: isDarkMode ? ColorsManager.white : ColorsManager.black,
@@ -123,7 +135,7 @@ class CustomDrawer extends StatelessWidget {
                 SizedBox(width: 8.w),
                 Text(
                   '${LocaleKeys.wallet_balance.tr()} 80,228.58 ${LocaleKeys.sar.tr()}',
-                  style: LightAppStyle.subtitle.copyWith(
+                  style: textTheme.displayMedium?.copyWith(
                     fontSize: 13.sp,
                     color: isDarkMode ? ColorsManager.white : ColorsManager.black,
                     fontWeight: FontWeight.w500,
@@ -142,12 +154,13 @@ class CustomDrawer extends StatelessWidget {
     required VoidCallback onTap,
     bool isLogout = false,
     required bool isDarkMode,
+    required TextTheme textTheme,
   }) {
     return ListTile(
       contentPadding: EdgeInsets.symmetric(horizontal: 24.w),
       title: Text(
         title,
-        style: LightAppStyle.bodyText.copyWith(
+        style: textTheme.bodyLarge?.copyWith(
           fontSize: 15.sp,
           color: isLogout
               ? ColorsManager.error
@@ -159,7 +172,12 @@ class CustomDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDarkModeToggle(BuildContext context, ThemeCubit themeCubit, bool isDarkMode) {
+  Widget _buildDarkModeToggle(
+      BuildContext context,
+      ThemeCubit themeCubit,
+      bool isDarkMode,
+      TextTheme textTheme,
+      ) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 16.h),
       color: isDarkMode ? ColorsManager.darkSurface : const Color(0xFFF9F9F9),
@@ -168,7 +186,7 @@ class CustomDrawer extends StatelessWidget {
         children: [
           Text(
             LocaleKeys.dark_mode.tr(),
-            style: LightAppStyle.bodyText.copyWith(
+            style: textTheme.bodyLarge?.copyWith(
               fontSize: 15.sp,
               fontWeight: FontWeight.w500,
               color: isDarkMode ? ColorsManager.white : ColorsManager.black,
@@ -222,7 +240,8 @@ class CustomDrawer extends StatelessWidget {
   }
 
   void _showLogoutDialog(BuildContext context) {
-    final isDarkMode = context.read<ThemeCubit>().isDarkMode;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
 
     showDialog(
       context: context,
@@ -266,6 +285,5 @@ class CustomDrawer extends StatelessWidget {
   }
 
   void _showLanguageDialog(BuildContext context) {
-    // هتضيف منطق تغيير اللغة هنا
   }
 }

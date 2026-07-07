@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:easy_localization/easy_localization.dart';
+import '../../../../core/errors/failures.dart';
 import '../../../../core/theme/app_styles.dart';
 import '../../../../core/theme/cubit/theme_cubit.dart';
 import '../../../../core/utils/colors_manager.dart';
@@ -17,14 +18,27 @@ import '../../../../core/widgets/custom_text_field.dart';
 import '../widgets/auth_question_row.dart';
 import '../widgets/language_switch_row.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final formKey = GlobalKey<FormState>();
+  final phoneController = TextEditingController();
+  final passwordController = TextEditingController();
+
+  @override
+  void dispose() {
+    phoneController.dispose();
+    passwordController.dispose();
+    super.dispose();
+  }
+  @override
   Widget build(BuildContext context) {
-    final formKey = GlobalKey<FormState>();
-    final phoneController = TextEditingController();
-    final passwordController = TextEditingController();
+
     final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
 
     return Scaffold(
@@ -52,17 +66,64 @@ class LoginScreen extends StatelessWidget {
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 RoutesManager.home,
-                (route) => false,
+                    (route) => false,
               );
             } else if (state is AuthFailure) {
-              // إخفاء أي سناك بار ظاهر وإظهار رسالة الخطأ الراجعة من الـ ErrorHandler
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(state.errorMessage),
-                  backgroundColor: Colors.red,
-                ),
-              );
+
+              final failure = state.failure;
+
+              // 🎨 شكل مختلف حسب نوع الخطأ
+              if (failure is NetworkFailure) {
+                // 📶 خطأ شبكة - لون برتقالي
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.wifi_off, color: Colors.white, size: 20.sp),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Text(
+                            failure.message ?? LocaleKeys.no_internet_error.tr(),
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.orange.shade700,
+                    duration: const Duration(seconds: 5),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else if (failure is ServerFailure) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(Icons.error_outline, color: Colors.white, size: 20.sp),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Text(
+                            failure.message ?? LocaleKeys.server_internal_error.tr(),
+                            style: TextStyle(fontSize: 14.sp),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: Colors.red.shade700,
+                    duration: const Duration(seconds: 4),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              } else {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(failure.message ?? LocaleKeys.unexpected_error.tr()),
+                    backgroundColor: Colors.red,
+                    duration: const Duration(seconds: 3),
+                  ),
+                );
+              }
             }
           },
           child: SingleChildScrollView(
@@ -121,7 +182,6 @@ class LoginScreen extends StatelessWidget {
                   ),
                   SizedBox(height: 24.h),
 
-                  // استخدام الـ BlocBuilder لتغيير حالة الزرار فقط دون إعادة بناء الشاشة كلها
                   BlocBuilder<AuthCubit, AuthState>(
                     builder: (context, state) {
                       if (state is AuthLoading) {
@@ -131,8 +191,11 @@ class LoginScreen extends StatelessWidget {
                       return CustomElevatedButton(
                         text: LocaleKeys.login_button.tr(),
                         onPressed: () {
+                          final state = context.read<AuthCubit>().state;
+
+                          if (state is AuthLoading) return; // 🔥 يمنع الضغط المتكرر
+
                           if (formKey.currentState!.validate()) {
-                            // نداء دالة تسجيل الدخول وتمرير البيانات المكتوبة
                             context.read<AuthCubit>().loginUser(
                               userName: phoneController.text.trim(),
                               password: passwordController.text,
@@ -146,7 +209,7 @@ class LoginScreen extends StatelessWidget {
                   SizedBox(height: 24.h),
                   AuthQuestionRow(
                     question: LocaleKeys.no_account_question.tr(),
-                    actionText: LocaleKeys.create_account.tr(),
+                    actionText: ColorsManager.white == ColorsManager.white ? LocaleKeys.create_account.tr() : '',
                     onActionTap: () {
                       Navigator.pushNamed(context, RoutesManager.register);
                     },

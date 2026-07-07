@@ -2,18 +2,21 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:exp_intern/core/storage/token_storage.dart';
 import 'package:exp_intern/core/utils/endpoint_manger.dart';
+import 'package:injectable/injectable.dart';
 
+@LazySingleton()
 class ApiService {
   final Dio _dio;
-  final TokenStorage _tokenStorage = TokenStorage();
+  final TokenStorage _tokenStorage; // 💡 تم التعديل: حقن الـ TokenStorage من الخارج للـ DI
 
-  ApiService() : _dio = Dio() {
+  ApiService(this._tokenStorage) : _dio = Dio() {
     _dio.options = BaseOptions(
       baseUrl: EndpointsManager.baseUrl,
       connectTimeout: const Duration(seconds: 20),
       receiveTimeout: const Duration(seconds: 20),
     );
-
+    _dio.interceptors.add(LogInterceptor(
+        requestBody: true, responseBody: true, requestHeader: true));
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
@@ -31,14 +34,6 @@ class ApiService {
           print('📤 ${options.method} ${options.path}');
           return handler.next(options);
         },
-        onResponse: (response, handler) {
-          print('📥 ${response.statusCode} ${response.requestOptions.path}');
-          return handler.next(response);
-        },
-        onError: (error, handler) {
-          print('❌ Error: ${error.message}');
-          return handler.next(error);
-        },
       ),
     );
   }
@@ -49,26 +44,19 @@ class ApiService {
     return 'unknown';
   }
 
-  Future<Response> getData({required String path, Map<String, dynamic>? queryParameters}) async {
+  Future<Response> getData(
+      {required String path, Map<String, dynamic>? queryParameters}) async {
     try {
       return await _dio.get(path, queryParameters: queryParameters);
-    } on DioException catch (e) {
-      // لو السيرفر رجع ريسبونس وفيه داتا مرره عشان نقرأ المسدج منه
-      if (e.response != null) {
-        return e.response!;
-      }
+    } on DioException {
       rethrow;
     }
   }
 
-  Future<Response> postData({required String path, Object? data}) async {
+  Future<Response> postData({required String path, Object? data,Map<String,dynamic>? queryParameters}) async {
     try {
-      return await _dio.post(path, data: data);
-    } on DioException catch (e) {
-      // لو السيرفر رجع ريسبونس وفيه داتا مرره عشان نقرأ المسدج منه
-      if (e.response != null) {
-        return e.response!;
-      }
+      return await _dio.post(path, data: data,queryParameters: queryParameters);
+    } on DioException {
       rethrow;
     }
   }
@@ -76,10 +64,7 @@ class ApiService {
   Future<Response> putData({required String path, Object? data}) async {
     try {
       return await _dio.put(path, data: data);
-    } on DioException catch (e) {
-      if (e.response != null) {
-        return e.response!;
-      }
+    } on DioException {
       rethrow;
     }
   }
@@ -87,11 +72,32 @@ class ApiService {
   Future<Response> deleteData({required String path, Object? data}) async {
     try {
       return await _dio.delete(path, data: data);
-    } on DioException catch (e) {
-      if (e.response != null) {
-        return e.response!;
-      }
+    }
+    on DioException {
       rethrow;
     }
   }
+
+  Future<Response> executeDynamicStep({
+    required String path,
+    required String method,
+    Map<String, dynamic>? queryParameters,
+    Object? data,
+  }) async {
+    try {
+      final String upperMethod = method.toUpperCase();
+      if (upperMethod == 'POST') {
+        return await _dio.post(path, data: data, queryParameters: queryParameters);
+      } else if (upperMethod == 'PUT') {
+        return await _dio.put(path, data: data, queryParameters: queryParameters);
+      } else if (upperMethod == 'DELETE') {
+        return await _dio.delete(path, data: data, queryParameters: queryParameters);
+      } else {
+        return await _dio.get(path, queryParameters: queryParameters);
+      }
+    } on DioException {
+      rethrow;
+    }
+  }
+
 }

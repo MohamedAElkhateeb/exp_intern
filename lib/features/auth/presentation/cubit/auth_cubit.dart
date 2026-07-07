@@ -1,27 +1,31 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../domin/use_cases/login_use_case.dart';
+import 'package:injectable/injectable.dart';
+import '../../domain/repositories/auth_repository.dart';
 import 'auth_state.dart';
-
+@injectable
 class AuthCubit extends Cubit<AuthState> {
-  final LoginUseCase _loginUseCase;
+  final AuthRepository _authRepository;
 
-  AuthCubit(this._loginUseCase) : super(AuthInitial());
+  AuthCubit(this._authRepository) : super(AuthInitial());
 
   Future<void> loginUser({
     required String userName,
     required String password,
+    bool rememberMe = true,
   }) async {
     emit(AuthLoading());
 
-    final result = await _loginUseCase.call(
+    final result = await _authRepository.login(
       userName: userName,
       password: password,
+      rememberMe: rememberMe,
     );
 
-    if (result['success'] == true) {
-      emit(AuthSuccess(result['userEntity']));
-    } else {
-      emit(AuthFailure(result['message'] ?? 'فشل الاتصال بالسيرفر'));
-    }
+    result.fold(
+          (failure) => emit(AuthFailure(failure)),
+          (userEntity) {
+        emit(AuthSuccess(userEntity));
+      },
+    );
   }
 }

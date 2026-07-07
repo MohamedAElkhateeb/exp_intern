@@ -14,8 +14,9 @@ class ContactUsHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     return Padding(
       padding: EdgeInsets.symmetric(vertical: 20.h, horizontal: 16.w),
       child: Column(
@@ -23,12 +24,11 @@ class ContactUsHomeScreen extends StatelessWidget {
         children: [
           Text(
             LocaleKeys.contact_us_message.tr(),
-            style: LightAppStyle.bodyText.copyWith(
+            style: textTheme.bodyLarge?.copyWith(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
               color: isDarkMode ? ColorsManager.white80 : ColorsManager.black.withOpacity(0.7),
-            ),
-          ),
+            ),          ),
           SizedBox(height: 16.h),
           Row(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -13,8 +13,9 @@ class HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
       child: Row(
@@ -34,12 +35,11 @@ class HomeHeader extends StatelessWidget {
           const Spacer(),
           Text(
             '${LocaleKeys.welcome_greeting.tr()}${LocaleKeys.dear_customer.tr()}',
-            style: LightAppStyle.title.copyWith(
-              fontSize: 18.sp,
-              fontWeight: FontWeight.w500,
+            style: textTheme.displayLarge?.copyWith(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.bold,
               color: isDarkMode ? ColorsManager.white : ColorsManager.black,
-            ),
-          ),
+            ),          ),
           const Spacer(),
           Icon(
             Icons.notifications,

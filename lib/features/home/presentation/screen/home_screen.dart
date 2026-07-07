@@ -22,7 +22,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
-
   late final List<Widget> _screens;
 
   @override
@@ -45,10 +44,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
     return Scaffold(
-      backgroundColor: isDarkMode ? ColorsManager.darkBackground : ColorsManager.white,
       drawer: const CustomDrawer(),
       body: SafeArea(bottom: false, child: _screens[_selectedIndex]),
       bottomNavigationBar: BottomNavBar(
@@ -64,8 +60,6 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
     return Column(
       children: [
         const HomeHeader(),
@@ -87,22 +81,22 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
-// Placeholder for other screens
 class _PlaceholderScreen extends StatelessWidget {
   final String title;
+
   const _PlaceholderScreen({required this.title});
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     return Center(
       child: Text(
         title.tr(),
-        style: LightAppStyle.title.copyWith(
+        style: textTheme.displayLarge?.copyWith(
           color: isDarkMode ? ColorsManager.white : ColorsManager.black,
-        ),
-      ),
+        ),      ),
     );
   }
 }

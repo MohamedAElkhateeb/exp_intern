@@ -19,8 +19,9 @@ class BottomNavBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
-
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
+    final textTheme = theme.textTheme;
     return Container(
       decoration: BoxDecoration(
         color: isDarkMode ? ColorsManager.darkSurface : ColorsManager.white,
@@ -37,11 +38,11 @@ class BottomNavBar extends StatelessWidget {
         backgroundColor: isDarkMode ? ColorsManager.darkSurface : ColorsManager.white,
         selectedItemColor: ColorsManager.primaryTeal,
         unselectedItemColor: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
-        selectedLabelStyle: LightAppStyle.subtitle.copyWith(
+        selectedLabelStyle: textTheme.displayMedium?.copyWith(
           fontSize: 11.sp,
           fontWeight: FontWeight.w600,
         ),
-        unselectedLabelStyle: LightAppStyle.subtitle.copyWith(
+        unselectedLabelStyle: textTheme.displayMedium?.copyWith(
           fontSize: 11.sp,
         ),
         currentIndex: currentIndex,
