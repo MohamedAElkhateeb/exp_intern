@@ -6,8 +6,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'core/di/service_locator.dart';
 import 'core/theme/app_theme.dart';
 import 'core/theme/cubit/theme_cubit.dart';
-import 'core/utils/endpoint_manger.dart';
+import 'core/utils/endpoint_manager.dart';
+import 'core/utils/navigation_service.dart'; // 👈 أضف ده
 import 'core/utils/routes_manager.dart';
+import 'core/widgets/request_inspector.dart';
 import 'features/dynamic_steps/presentation/cubit/dynamic_steps_cubit.dart';
 
 class MyApp extends StatelessWidget {
@@ -42,12 +44,28 @@ class MyApp extends StatelessWidget {
                 supportedLocales: context.supportedLocales,
                 locale: context.locale,
                 onGenerateRoute: RoutesManager.router,
-                onUnknownRoute: (_) => MaterialPageRoute(
+                navigatorKey: NavigationService.navigatorKey,                 onUnknownRoute: (_) => MaterialPageRoute(
                   builder: (_) => const Scaffold(
-                    body: Center(child: Text("Page not found")),
+                    body: Center(
+                      child: Text("Page not found"),
+                    ),
                   ),
                 ),
                 initialRoute: RoutesManager.logIn,
+                builder: (context, child) {
+                  return Scaffold(
+                    body: Stack(
+                      children: [
+                        child!,
+                        Positioned(
+                          bottom: 80.h,
+                          right: 24.w,
+                          child: const RequestInspector(),
+                        ),
+                      ],
+                    ),
+                  );
+                },
               );
             },
           );

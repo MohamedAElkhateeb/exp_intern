@@ -1,14 +1,21 @@
 import 'package:easy_localization/easy_localization.dart';
-import 'package:exp_intern/features/dynamic_steps/domain/entity/dynamic_step_entity.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-
 import '../../../../core/utils/colors_manager.dart';
 import '../../../../core/utils/locale_keys.g.dart';
 import '../../../../core/utils/request_status_enum.dart';
+import '../../../dynamic_steps/domain/entity/dynamic_step_entity.dart';
+import '../../../dynamic_steps/presentation/cubit/dynamic_steps_cubit.dart';
+import '../../../dynamic_steps/presentation/cubit/dynamic_steps_state.dart';
+import '../../domain/entities/selected_package_entity.dart';
 import '../cubit/hourly_contract_cubit.dart';
 import '../cubit/hourly_contract_state.dart';
+import '../widgets/action_buttons_widget.dart';
+import '../widgets/coupon_section.dart';
+import '../widgets/package_card_widget.dart';
+import '../widgets/preferred_days_section.dart';
+import '../widgets/terms_and_conditions_widget.dart';
 
 class ContractDetailsScreen extends StatefulWidget {
   const ContractDetailsScreen({super.key});
@@ -20,7 +27,51 @@ class ContractDetailsScreen extends StatefulWidget {
 class _ContractDetailsScreenState extends State<ContractDetailsScreen> {
   final TextEditingController _couponController = TextEditingController();
 
-  String? selectedDayKey;
+  String? stepId;
+  String? serviceId;
+  SelectedPackageEntity? selectedPackage;
+  Map<String, dynamic>? contractData;
+  DynamicStepEntity? _stepDetailsEntity;
+  String? _dynamicHourlyPricingId;
+
+  List<String> selectedDays = [];
+  bool _showMaxDaysMessage = false;
+
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _couponController.addListener(() {});
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+
+    // ✅ Execute only once
+    if (!_isInitialized) {
+      _isInitialized = true;
+
+      final args = ModalRoute.of(context)?.settings.arguments as Map?;
+      stepId = args?['stepEntity']?.stepId ?? args?['stepId'] ?? '';
+      serviceId = args?['serviceId'] ?? '';
+      selectedPackage = args?['selectedPackage'];
+      contractData = args?['contractData'] as Map<String, dynamic>?;
+      _dynamicHourlyPricingId = selectedPackage?.selectedHourlyPricingId;
+
+      // ✅ Use WidgetsBinding to ensure proper timing
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (stepId?.isNotEmpty ?? false) {
+          context.read<DynamicStepsCubit>().fetchStepDetailsByActionName(
+            stepId: stepId!,
+            actionName: 'HourlyPackagePromotion',
+            serviceType: 2,
+          );
+        }
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -28,354 +79,320 @@ class _ContractDetailsScreenState extends State<ContractDetailsScreen> {
     super.dispose();
   }
 
+  // ✅ دالة مساعدة لتحديث الأيام
+  void _updateSelectedDays(String date, bool isSelected) {
+    setState(() {
+      if (isSelected) {
+        selectedDays.remove(date);
+        _showMaxDaysMessage = false;
+      } else {
+        final maxDays = selectedPackage?.weeklyVisits ?? 1;
+        if (selectedDays.length < maxDays) {
+          selectedDays.add(date);
+          _showMaxDaysMessage = false;
+        } else {
+          _showMaxDaysMessage = true;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                LocaleKeys.max_days_selected_message.tr(
+                  namedArgs: {'maxDays': maxDays.toString()},
+                ),
+              ),
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDarkMode = theme.brightness == Brightness.dark;
 
-    return Scaffold(
-      backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          LocaleKeys.contractDetails.tr(),
-          style: theme.appBarTheme.titleTextStyle,
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(
-              Icons.notifications_none,
-              size: 28.sp,
-            ),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _buildCouponSection(theme, isDarkMode),
-            SizedBox(height: 20.h),
-
-            BlocBuilder<HourlyContractCubit, HourlyContractState>(
-              builder: (context, state) {
-                return _buildPreferredDaysSection(theme, isDarkMode, state);
-              },
-            ),
-            SizedBox(height: 20.h),
-
-            _buildPackageCard(theme, isDarkMode),
-            SizedBox(height: 24.h),
-
-            _buildTermsAndConditions(theme),
-            SizedBox(height: 24.h),
-
-            _buildActionButtons(theme, isDarkMode),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildCouponSection(ThemeData theme, bool isDarkMode) {
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: LocaleKeys.doYouHaveCoupon.tr(),
-        labelStyle: theme.textTheme.displaySmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: isDarkMode ? ColorsManager.white70 : ColorsManager.black,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
-          borderSide: BorderSide(
-            color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyBorder,
-            width: 1.5.w,
-          ),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(top: 4.h),
-        child: Row(
-          children: [
-            Expanded(
-              child: Text(
-                LocaleKeys.pleaseEnterCoupon.tr(),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
-                ),
-              ),
-            ),
-            SizedBox(width: 12.w),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: isDarkMode ? ColorsManager.white : ColorsManager.black,
-                foregroundColor: isDarkMode ? ColorsManager.black : ColorsManager.white,
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-              ),
-              child: Text(
-                LocaleKeys.applyCoupon.tr(),
-                style: theme.textTheme.labelLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: isDarkMode ? ColorsManager.black : ColorsManager.white,
-                  fontSize: 12.sp,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildPreferredDaysSection(ThemeData theme, bool isDarkMode, HourlyContractState state) {
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: LocaleKeys.preferredDays.tr(),
-        labelStyle: theme.textTheme.displaySmall?.copyWith(
-          fontWeight: FontWeight.bold,
-          color: isDarkMode ? ColorsManager.white70 : ColorsManager.black,
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12.r),
-          borderSide: BorderSide(
-            color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyBorder,
-            width: 1.5.w,
-          ),
-        ),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(top: 10.h),
-        child: state.availableDays.status == RequestStatus.loading
-            ? const Center(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: CircularProgressIndicator(),
-          ),
-        )
-            : state.availableDays.data.isEmpty
-            ? Center(
-          child: Padding(
-            padding: EdgeInsets.all(16.0),
-            child: Text(
-              LocaleKeys.no_days_available.tr(),
-              style: theme.textTheme.bodyMedium,
-            ),
-          ),
-        )
-            : GridView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: state.availableDays.data.length,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 3,
-            mainAxisSpacing: 10.h,
-            crossAxisSpacing: 10.w,
-            childAspectRatio: 2.3,
-          ),
-          itemBuilder: (context, index) {
-            final dayEntity = state.availableDays.data[index];
-            final isSelected = dayEntity.date == selectedDayKey;
-
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  selectedDayKey = dayEntity.date;
-                });
-              },
-              child: Container(
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? (isDarkMode ? ColorsManager.white : ColorsManager.black)
-                      : (isDarkMode ? ColorsManager.darkSurface : Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8.r),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      dayEntity.dayName ,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? (isDarkMode ? ColorsManager.black : ColorsManager.white)
-                            : (isDarkMode ? ColorsManager.white70 : ColorsManager.black),
-                      ),
-                    ),
-                    Text(
-                      dayEntity.date ,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isSelected
-                            ? (isDarkMode ? ColorsManager.black : ColorsManager.white)
-                            : (isDarkMode ? ColorsManager.white70 : ColorsManager.black),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<DynamicStepsCubit, DynamicStepsState>(
+          listenWhen: (previous, current) =>
+          ModalRoute.of(context)?.isCurrent == true,
+          listener: (context, state) {
+            _handleDynamicStepsState(state, context);
           },
         ),
-      ),
-    );
-  }
-
-  Widget _buildPackageCard(ThemeData theme, bool isDarkMode) {
-    return Container(
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: isDarkMode ? ColorsManager.darkSurface : Colors.grey.shade300,
-        borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyBorder,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Expanded(
-                child: Text(
-                  LocaleKeys.packageDescription.tr(),
-                  style: theme.textTheme.displayMedium?.copyWith(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              Icon(
-                Icons.add_circle_outline,
-                size: 28.sp,
-                color: isDarkMode ? ColorsManager.white : ColorsManager.black,
-              ),
-            ],
-          ),
-          SizedBox(height: 8.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: isDarkMode ? ColorsManager.white70 : ColorsManager.greyText,
-              ),
-              borderRadius: BorderRadius.circular(6.r),
-            ),
-            child: Text(
-              LocaleKeys.visitPrice.tr(args: ['240.00']),
-              style: theme.textTheme.bodyMedium?.copyWith(
-                fontSize: 11.sp,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          SizedBox(height: 12.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.start,
-            children: [
-              Text(
-                LocaleKeys.currencySar.tr(args: ['9,800.00']),
-                style: theme.textTheme.displayLarge?.copyWith(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Text(
-                '12,800.00',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  fontSize: 13.sp,
-                  color: ColorsManager.greyText,
-                  decoration: TextDecoration.lineThrough,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTermsAndConditions(ThemeData theme) {
-    return Column(
-      children: [
-        Text(
-          LocaleKeys.byCompletingSteps.tr(),
-          textAlign: TextAlign.center,
-          style: theme.textTheme.bodyLarge,
-        ),
-        SizedBox(height: 2.h),
-        GestureDetector(
-          onTap: () {},
-          child: Text(
-            LocaleKeys.companyTerms.tr(),
-            textAlign: TextAlign.center,
-            style: theme.textTheme.bodyLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: ColorsManager.primaryTeal,
-            ),
-          ),
+        BlocListener<HourlyContractCubit, HourlyContractState>(
+          listener: (context, state) {
+            _handleHourlyContractState(state);
+          },
         ),
       ],
+      child: Scaffold(
+        backgroundColor: theme.scaffoldBackgroundColor,
+        appBar: _buildAppBar(theme, isDarkMode),
+        body: SingleChildScrollView(
+          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              CouponSection(
+                controller: _couponController,
+                onApplyCoupon: _applyCoupon,
+              ),
+              SizedBox(height: 20.h),
+              BlocBuilder<HourlyContractCubit, HourlyContractState>(
+                builder: (context, state) {
+                  return PreferredDaysSection(
+                    state: state,
+                    selectedDays: selectedDays,
+                    maxDays: selectedPackage?.weeklyVisits ?? 1,
+                    isDarkMode: isDarkMode,
+                    onDayTap: _updateSelectedDays,
+                    showMaxDaysMessage: _showMaxDaysMessage,
+                  );
+                },
+              ),
+              SizedBox(height: 20.h),
+              PackageCardWidget(
+                selectedDays: selectedDays,
+                selectedPackage: selectedPackage,
+                isDarkMode: isDarkMode,
+              ),
+              SizedBox(height: 24.h),
+              const TermsAndConditionsWidget(),
+              SizedBox(height: 24.h),
+              BlocBuilder<HourlyContractCubit, HourlyContractState>(
+                builder: (context, state) {
+                  return ActionButtonsWidget(
+                    selectedDays: selectedDays,
+                    selectedPackage: selectedPackage,
+                    stepId: stepId,
+                    serviceId: serviceId,
+                    contractData: contractData,
+                    stepDetailsEntity: _stepDetailsEntity,
+                    dynamicHourlyPricingId: _dynamicHourlyPricingId,
+                    isDarkMode: isDarkMode,
+                    onShowVisits: _showVisits,
+                    onCompleteContract: _completeContract,
+                    state: state,
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
-  Widget _buildActionButtons(ThemeData theme, bool isDarkMode) {
-    return Row(
-      children: [
-        Expanded(
-          child: OutlinedButton(
-            onPressed: () {},
-            style: OutlinedButton.styleFrom(
-              side: BorderSide(
-                color: isDarkMode ? ColorsManager.white : ColorsManager.black,
-                width: 1.5.w,
-              ),
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-            ),
-            child: Text(
-              LocaleKeys.showVisits.tr(),
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? ColorsManager.white : ColorsManager.black,
-              ),
-            ),
+  // ============ Helper Methods ============
+
+  void _handleDynamicStepsState(DynamicStepsState state, BuildContext context) {
+    if (state.isStepDetailsSuccess) {
+      _stepDetailsEntity = state.stepDetailsEntity;
+      if (selectedPackage != null && (stepId?.isNotEmpty ?? false)) {
+        context.read<HourlyContractCubit>().fetchHourlyPricing(
+          stepId: stepId!,
+          data: {
+            'selectedHourlyPricingId':
+            selectedPackage!.selectedHourlyPricingId,
+            'resourceGroupId': selectedPackage!.resourceGroupId,
+            'serviceId': serviceId ?? '',
+            'contractStartDate': contractData?['contractStartDate'] ?? '',
+            'contractDuration':
+            selectedPackage!.contractDuration.toString(),
+            'hoursCount': selectedPackage!.hoursNumber.toString(),
+            'empcount': selectedPackage!.employeeNumber.toString(),
+            'weeklyvisits': selectedPackage!.weeklyVisits.toString(),
+            'visitShift': selectedPackage!.visitShift.toString(),
+            'promotionCode': selectedPackage!.promotionCode ?? '',
+            'days': contractData?['days'] ?? '',
+            'timeSlotId': selectedPackage!.timeSlotId,
+          },
+        );
+      }
+    }
+
+    if (state.isStepDetailsError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            state.stepDetailsFailure?.message ??
+                LocaleKeys.something_went_wrong.tr(),
           ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
         ),
-        SizedBox(width: 16.w),
-        Expanded(
-          child: ElevatedButton(
-            onPressed: () {},
-            style: ElevatedButton.styleFrom(
-              backgroundColor: isDarkMode ? ColorsManager.white : ColorsManager.black,
-              foregroundColor: isDarkMode ? ColorsManager.black : ColorsManager.white,
-              padding: EdgeInsets.symmetric(vertical: 12.h),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8.r),
-              ),
-            ),
-            child: Text(
-              LocaleKeys.completeContract.tr(),
-              style: theme.textTheme.labelLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: isDarkMode ? ColorsManager.black : ColorsManager.white,
-              ),
+      );
+    }
+
+    if (state.isSubmitSuccess) {
+      final nextStep = state.stepEntity;
+      if (nextStep != null) {
+        if (nextStep.action == 'CreateContract') {
+          context.read<DynamicStepsCubit>().resetState();
+          context.read<DynamicStepsCubit>().executeDynamicStep(
+            controller: nextStep.controller ?? 'HourlyContract',
+            action: nextStep.action ?? 'CreateContract',
+            method: nextStep.httpMethod ?? 'POST',
+            queryParameters: {'stepId': stepId},
+            data: null,
+          );
+        } else if (nextStep.action == 'ContractSuccessData') {
+          Navigator.pushNamed(
+            context,
+            nextStep.name ?? 'SuccessScreen',
+            arguments: {'stepEntity': nextStep},
+          );
+        }
+      }
+    }
+
+    if (state.isSubmitError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            state.failure?.message ?? LocaleKeys.something_went_wrong.tr(),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _handleHourlyContractState(HourlyContractState state) {
+    if (state.hourlyPricingStatus == RequestStatus.success) {
+      final firstPackage = state.hourlyPricingData?.hourlyPackages.firstOrNull;
+      if (firstPackage != null && firstPackage.hourlypricingId != null) {
+        setState(() {
+          _dynamicHourlyPricingId = firstPackage.hourlypricingId;
+        });
+      }
+    }
+
+    if (state.hourlyPricingStatus == RequestStatus.error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            state.hourlyPricingError ?? LocaleKeys.error_loading_pricing.tr(),
+          ),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 3),
+        ),
+      );
+    }
+  }
+
+  void _applyCoupon() {
+    if (_couponController.text.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(LocaleKeys.coupon_applied_successfully.tr()),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _showVisits() {
+    if (selectedDays.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            LocaleKeys.selected_days_list.tr(
+              namedArgs: {'days': selectedDays.join(', ')},
             ),
           ),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(LocaleKeys.please_select_days_first.tr()),
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  void _completeContract(
+      BuildContext context,
+      HourlyContractState state,
+      ) {
+    final stepEntity = _stepDetailsEntity;
+    if (stepEntity != null) {
+      // نفس الـ logic القديم بالضبط
+      final List<String> selectedDayNames = [];
+      for (var date in selectedDays) {
+        final matchingDay = state.availableDays.data.cast<dynamic>().firstWhere(
+              (element) => element.date == date,
+          orElse: () => null,
+        );
+        if (matchingDay != null) {
+          selectedDayNames.add(matchingDay.dayName);
+        } else if (state.availableDays.data.isNotEmpty) {
+          selectedDayNames.add(state.availableDays.data.first.dayName);
+        }
+      }
+
+      final daysNamesString = selectedDayNames.join(',');
+
+      context.read<DynamicStepsCubit>().executeDynamicStep(
+        controller: stepEntity.controller ?? '',
+        action: stepEntity.action ?? '',
+        method: stepEntity.httpMethod ?? 'POST',
+        queryParameters: {'stepId': stepId},
+        data: {
+          'hourlyPricingId': _dynamicHourlyPricingId,
+          'resourceGroupId': selectedPackage!.resourceGroupId,
+          'serviceId': serviceId ?? '',
+          'contractDuration': selectedPackage!.contractDuration.toString(),
+          'hoursCount': selectedPackage!.hoursNumber.toString(),
+          'timeSlotId': selectedPackage!.timeSlotId,
+          'empcount': selectedPackage!.employeeNumber.toString(),
+          'weeklyvisits': selectedPackage!.weeklyVisits.toString(),
+          'visitShift': selectedPackage!.visitShift.toString(),
+          'promotionCode': selectedPackage!.promotionCode ?? '',
+          'days': daysNamesString,
+          'startDate': contractData?['contractStartDate'] ?? '',
+          'extraVisits': '0',
+          'isQuestionerDone': true,
+          'newShiftEndDate': null,
+          'newShiftStartDate': null,
+          'ContactPerson': null,
+        },
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('جاري تحميل تفاصيل الخطوة...'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  PreferredSizeWidget _buildAppBar(ThemeData theme, bool isDarkMode) {
+    return AppBar(
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back),
+        onPressed: () => Navigator.pop(context),
+      ),
+      title: Text(
+        LocaleKeys.contractDetails.tr(),
+        style: theme.textTheme.displayLarge?.copyWith(
+          fontSize: 20.sp,
+          color: isDarkMode ? ColorsManager.white : ColorsManager.black,
+        ),
+      ),
+      actions: [
+        IconButton(
+          icon: Icon(Icons.notifications_none, size: 28.sp),
+          onPressed: () {},
         ),
       ],
     );

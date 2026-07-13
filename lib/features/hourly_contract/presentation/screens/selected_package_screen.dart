@@ -8,12 +8,10 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../../core/utils/colors_manager.dart';
 import '../../../../core/utils/locale_keys.g.dart';
 import '../../../../core/utils/request_status_enum.dart';
-import '../../../../core/widgets/app_calendar_picker.dart';
 import '../../../dynamic_steps/domain/entity/dynamic_step_entity.dart';
 import '../../../dynamic_steps/presentation/cubit/dynamic_steps_cubit.dart';
 import '../../../dynamic_steps/presentation/cubit/dynamic_steps_state.dart';
 import '../../../resource_groub/presentation/cubit/resource_group_cubit.dart';
-import '../../../resource_groub/presentation/cubit/resource_group_state.dart';
 import '../../domain/entities/shift_entity.dart';
 import '../../domain/entities/shift_hours_entity.dart';
 import '../../domain/entities/time_slot_entity.dart';
@@ -23,8 +21,16 @@ import '../../data/model/available_days_params.dart';
 import '../cubit/hourly_contract_cubit.dart';
 import '../cubit/hourly_contract_state.dart';
 import '../widgets/delivery_notes_widget.dart';
-import '../widgets/horizontal_filter_widget.dart';
 import '../widgets/package_item_widget.dart';
+// ✅ Import the extracted widgets
+import '../widgets/filters/nationality_filter_widget.dart';
+import '../widgets/filters/shift_filter_widget.dart';
+import '../widgets/filters/visit_duration_filter_widget.dart';
+import '../widgets/filters/visit_time_filter_widget.dart';
+import '../widgets/filters/contract_duration_filter_widget.dart';
+import '../widgets/dialogs/calendar_dialog.dart';
+import '../widgets/dialogs/confirmation_dialog.dart';
+import '../widgets/section_title_widget.dart';
 
 class SelectPackageScreen extends StatefulWidget {
   final String serviceId;
@@ -50,13 +56,17 @@ class _SelectPackageScreenState extends State<SelectPackageScreen> {
 
   DateTime? _selectedContractDate;
 
-  int _expandedPackageIndex = 0;
+  int _expandedPackageIndex = -1;
 
   static const String selectCalendarStep = "SelectCalender";
 
   @override
   void initState() {
     super.initState();
+    _loadInitialData();
+  }
+
+  void _loadInitialData() {
     context.read<ResourceGroupCubit>().getResourceGroups(
       serviceId: widget.serviceId,
     );
@@ -70,256 +80,236 @@ class _SelectPackageScreenState extends State<SelectPackageScreen> {
 
   @override
   void dispose() {
-    context.read<DynamicStepsCubit>().resetState();
-    context.read<HourlyContractCubit>().resetState();
-
     super.dispose();
   }
 
   void _handleStepNavigation(DynamicStepEntity nextStep) {
-    final int stepType = nextStep.stepType ?? 0;
+    final stepType = nextStep.stepType ?? 0;
 
-    if (stepType == 6) {
-      _showStepPopup(nextStep);
-    } else if (stepType == 2 || stepType == 8) {
-      Navigator.of(context).pushNamed(
-        nextStep.name ?? '',
-        arguments: {'serviceId': widget.serviceId, 'stepEntity': nextStep},
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            '${LocaleKeys.step_not_supported.tr()} $stepType',
-          ),
-        ),
-      );
+    switch (stepType) {
+      case 6:
+        _showStepPopup(nextStep);
+        break;
+      case 2:
+      case 8:
+        _navigateToStep(nextStep);
+        break;
+      default:
+break;
     }
   }
 
+  void _navigateToStep(DynamicStepEntity nextStep) {
+    Navigator.of(context).pushNamed(
+      nextStep.name ?? '',
+      arguments: {'serviceId': widget.serviceId, 'stepEntity': nextStep},
+    );
+  }
+
+  void _showUnsupportedStepMessage(int stepType) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('${LocaleKeys.step_not_supported.tr()} $stepType'),
+      ),
+    );
+  }
+
   Future<void> _showStepPopup(DynamicStepEntity nextStep) async {
+    if (nextStep.name == selectCalendarStep) {
+      await _showCalendarPopup(nextStep);
+    } else {
+      await _showConfirmationPopup(nextStep);
+    }
+  }
+
+  Future<void> _showCalendarPopup(DynamicStepEntity nextStep) async {
     final hourlyContractCubit = context.read<HourlyContractCubit>();
 
+    if (_selectedContractDate == null) {
+      if (_selectedTimeSlotEntity?.minDate != null) {
+        try {
+          final minDate = DateFormat('yyyy-MM-dd').parse(_selectedTimeSlotEntity!.minDate!);
+          _selectedContractDate = minDate;
+        } catch (e) {
+          _selectedContractDate = DateTime.now();
+        }
+      } else {
+        _selectedContractDate = DateTime.now();
+      }
+    }
     await showDialog(
       context: context,
       useRootNavigator: false,
       barrierDismissible: true,
       builder: (dialogContext) {
-        final isDarkMode =
-            Theme.of(dialogContext).brightness == Brightness.dark;
+        return CalendarDialog(
+          selectedDate: _selectedContractDate,
+          nextStep: nextStep,
+          timeSlotEntity: _selectedTimeSlotEntity,
+          hourlyContractCubit: hourlyContractCubit,
+          onDateSelected: (date) {
+            setState(() {
+              _selectedContractDate = date;
+            });
+          },
+          onConfirm: () {
+            if (_selectedContractDate == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(LocaleKeys.please_select_visit_date_first.tr()),
+                ),
+              );
+              return;
+            }
 
-        return StatefulBuilder(
-          builder: (popupContext, setPopupState) {
-            return Dialog(
-              backgroundColor: isDarkMode
-                  ? ColorsManager.darkBackground
-                  : Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(24.r),
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 20.w,
-                      vertical: 24.h,
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        SizedBox(height: 10.h),
-                        Text(
-                          nextStep.name == selectCalendarStep
-                              ? LocaleKeys.selectFirstVisitDate.tr()
-                              : (nextStep.name ?? LocaleKeys.alert.tr()),
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.bold,
-                            color: isDarkMode
-                                ? ColorsManager.white
-                                : ColorsManager.black,
-                          ),
-                        ),
-                        SizedBox(height: 20.h),
-
-                        if (nextStep.name == selectCalendarStep) ...[
-                          AppCalendarPicker(
-                            selectedDate: _selectedContractDate,
-                            isDarkMode: isDarkMode,
-                            minDateString: _selectedTimeSlotEntity?.minDate,
-                            maxDateString: _selectedTimeSlotEntity?.maxDate,
-                            onDateSelected: (date) {
-                              setPopupState(() {
-                                _selectedContractDate = date;
-                              });
-                              setState(() {
-                                _selectedContractDate = date;
-                              });
-                            },
-                          ),
-                          SizedBox(height: 20.h),
-                        ] else ...[
-                          Text(
-                            nextStep.description ??
-                                LocaleKeys.please_confirm_next_step.tr(),
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: Colors.grey,
-                            ),
-                          ),
-                          SizedBox(height: 24.h),
-                        ],
-
-                        ElevatedButton(
-                          onPressed: () {
-                            if (nextStep.name == selectCalendarStep &&
-                                _selectedContractDate == null) {
-                              ScaffoldMessenger.of(dialogContext).showSnackBar(
-                                SnackBar(
-                                  content: Text(
-                                    LocaleKeys.please_select_visit_date_first
-                                        .tr(),
-                                  ),
-                                ),
-                              );
-                              return;
-                            }
-
-                            if (nextStep.name == selectCalendarStep &&
-                                _selectedPackage != null) {
-                              final package = _selectedPackage!;
-                              final formattedDate = DateFormat(
-                                'dd/MM/yyyy',
-                              ).format(_selectedContractDate!);
-
-                              final days =
-                                  _selectedTimeSlotEntity?.enableDays?.join(
-                                    ',',
-                                  ) ??
-                                  '';
-                              hourlyContractCubit.fetchAvailableDays(
-                                params: AvailableDaysParams(
-                                  selectedHourlyPricingId:
-                                      package.selectedHourlyPricingId,
-                                  resourceGroupId: package.resourceGroupId,
-                                  serviceId: package.serviceId,
-                                  contractStartDate: formattedDate,
-                                  contractDuration: package.contractDuration
-                                      .toString(),
-                                  hoursCount: package.hoursNumber.toString(),
-                                  empcount: package.employeeNumber.toString(),
-                                  weeklyvisits: package.weeklyVisits.toString(),
-                                  visitShift: package.visitShift.toString(),
-                                  promotionCode: package.promotionCode,
-                                  days: days,
-                                  timeSlotId: package.timeSlotId,
-                                ),
-                                stepId:
-                                    nextStep.stepId ??
-                                    widget.stepEntity.stepId ??
-                                    '',
-                              );
-
-                              Navigator.of(dialogContext).pop();
-
-                              final targetRoute = nextStep.nextStepAction ?? '';
-
-                              Navigator.of(context).pushNamed(
-                                targetRoute,
-                                arguments: {
-                                  'serviceId': widget.serviceId,
-                                  'stepEntity': nextStep,
-                                  'cubit': hourlyContractCubit,
-                                },
-                              );
-                              return;
-                            }
-
-                            Navigator.of(dialogContext).pop();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.black,
-                            minimumSize: Size(140.w, 45.h),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                          ),
-                          child: Text(
-                            LocaleKeys.next.tr(),
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              color: Colors.white,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  Positioned(
-                    top: -15.h,
-                    left: 0,
-                    right: 0,
-                    child: Center(
-                      child: GestureDetector(
-                        onTap: () {
-                          Navigator.of(dialogContext).pop();
-                        },
-                        child: CircleAvatar(
-                          radius: 18.r,
-                          backgroundColor: isDarkMode
-                              ? Colors.grey.shade800
-                              : Colors.grey.shade200,
-                          child: Icon(
-                            Icons.close,
-                            size: 18.w,
-                            color: isDarkMode ? Colors.white : Colors.black,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            );
+            if (_selectedPackage != null) {
+              _handleCalendarConfirmation(
+                dialogContext: dialogContext,
+                nextStep: nextStep,
+                hourlyContractCubit: hourlyContractCubit,
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(LocaleKeys.please_select_visit_date_first.tr()),
+                ),
+              );
+            }
+          },
+        );
+      },
+    );
+  }
+  Future<void> _showConfirmationPopup(DynamicStepEntity nextStep) async {
+    await showDialog(
+      context: context,
+      useRootNavigator: false,
+      barrierDismissible: true,
+      builder: (dialogContext) {
+        return ConfirmationDialog(
+          nextStep: nextStep,
+          onConfirm: () {
+            Navigator.of(dialogContext).pop();
+            // Handle confirmation logic here if needed
           },
         );
       },
     );
   }
 
-  void _triggerFetchTimeSlots() {
-    if (_selectedShiftEntity != null && _selectedHourEntity != null) {
-      context.read<HourlyContractCubit>().fetchTimeSlots(
-        params: TimeSlotParams(
-          serviceId: widget.serviceId,
-          stepId: widget.stepEntity.stepId ?? '',
-          shift: _selectedShiftEntity!.id ?? 0,
-          hours: _selectedHourEntity!.id ?? 0,
-        ),
-      );
+  void _handleCalendarConfirmation({
+    required BuildContext dialogContext,
+    required DynamicStepEntity nextStep,
+    required HourlyContractCubit hourlyContractCubit,
+  }) {
+    final package = _selectedPackage!;
+    if (_selectedTimeSlotEntity?.minDate != null) {
+      try {
+        final minDateStr = _selectedTimeSlotEntity!.minDate!;
+        DateTime minDate;
+        try {
+          minDate = DateFormat('yyyy-MM-dd').parse(minDateStr);
+        } catch (_) {
+          minDate = DateFormat('M/d/yyyy').parse(minDateStr);
+        }
+
+        if (_selectedContractDate!.isBefore(minDate)) {
+          _selectedContractDate = minDate;
+        }
+      } catch (_) {}
     }
+    final formattedDate = DateFormat('dd/MM/yyyy').format(_selectedContractDate!);
+
+    final days = _selectedTimeSlotEntity?.enableDays?.join(',') ?? '';
+
+    final params = AvailableDaysParams(
+      selectedHourlyPricingId: package.selectedHourlyPricingId,
+      resourceGroupId: package.resourceGroupId,
+      serviceId: package.serviceId,
+      contractStartDate: formattedDate,
+      contractDuration: package.contractDuration.toString(),
+      hoursCount: package.hoursNumber.toString(),
+      empcount: package.employeeNumber.toString(),
+      weeklyvisits: package.weeklyVisits.toString(),
+      visitShift: package.visitShift.toString(),
+      promotionCode: package.promotionCode,
+      days: days,
+      timeSlotId: package.timeSlotId,
+    );
+
+    final stepId = nextStep.stepId ?? widget.stepEntity.stepId ?? '';
+
+    hourlyContractCubit.fetchAvailableDays(
+      params: params,
+      stepId: stepId,
+    );
+
+    hourlyContractCubit.fetchHourlyPricing(
+      stepId: stepId,
+      data: {
+        'selectedHourlyPricingId': package.selectedHourlyPricingId,
+        'resourceGroupId': package.resourceGroupId,
+        'serviceId': widget.serviceId,
+        'contractStartDate': formattedDate,
+        'contractDuration': package.contractDuration.toString(),
+        'hoursCount': package.hoursNumber.toString(),
+        'empcount': package.employeeNumber.toString(),
+        'weeklyvisits': package.weeklyVisits.toString(),
+        'visitShift': package.visitShift.toString(),
+        'promotionCode': package.promotionCode,
+        'days': days,
+        'timeSlotId': package.timeSlotId,
+      },
+    );
+
+    Navigator.of(dialogContext).pop();
+
+    final targetRoute = nextStep.nextStepAction ?? '';
+
+    Navigator.of(context).pushNamed(
+      targetRoute,
+      arguments: {
+        'serviceId': widget.serviceId,
+        'stepEntity': nextStep,
+        'cubit': hourlyContractCubit,
+        'selectedPackage': package,
+        'contractData': {
+          'contractStartDate': formattedDate,
+          'days': days,
+        },
+      },
+    );
+  }
+
+  void _triggerFetchTimeSlots() {
+    if (_selectedShiftEntity == null || _selectedHourEntity == null) return;
+
+    context.read<HourlyContractCubit>().fetchTimeSlots(
+      params: TimeSlotParams(
+        serviceId: widget.serviceId,
+        stepId: widget.stepEntity.stepId ?? '',
+        shift: _selectedShiftEntity!.id ?? 0,
+        hours: _selectedHourEntity!.id ?? 0,
+      ),
+    );
   }
 
   void _triggerFetchPackages() {
-    if (_selectedNationalityEntity != null && _selectedShiftEntity != null) {
-      context.read<HourlyContractCubit>().fetchFixedPackages(
-        stepId: widget.stepEntity.stepId ?? '',
-        nationalityId: _selectedNationalityEntity!.id ?? '',
-        shift: _selectedShiftEntity!.id ?? 0,
-      );
-    }
+    if (_selectedNationalityEntity == null || _selectedShiftEntity == null) return;
+
+    context.read<HourlyContractCubit>().fetchFixedPackages(
+      stepId: widget.stepEntity.stepId ?? '',
+      nationalityId: _selectedNationalityEntity!.id ?? '',
+      shift: _selectedShiftEntity!.id ?? 0,
+    );
   }
 
   void _fetchDeliveryNotesAutomatically() {
-    if (_selectedTimeSlotEntity?.key != null) {
-      context.read<HourlyContractCubit>().fetchArrivalTime(
-        timeSlotId: _selectedTimeSlotEntity!.key!,
-      );
-    }
+    if (_selectedTimeSlotEntity?.key == null) return;
+
+    context.read<HourlyContractCubit>().fetchArrivalTime(
+      timeSlotId: _selectedTimeSlotEntity!.key!,
+    );
   }
 
   @override
@@ -330,486 +320,14 @@ class _SelectPackageScreenState extends State<SelectPackageScreen> {
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
-      appBar: AppBar(
-        backgroundColor: theme.scaffoldBackgroundColor,
-        elevation: 0,
-        centerTitle: true,
-        title: Text(
-          LocaleKeys.select_package.tr(),
-          style: textTheme.displayLarge?.copyWith(
-            fontSize: 20.sp,
-            color: isDarkMode ? ColorsManager.white : ColorsManager.black,
-          ),
-        ),
-      ),
+      appBar: _buildAppBar(isDarkMode, textTheme),
       body: SafeArea(
         child: BlocListener<DynamicStepsCubit, DynamicStepsState>(
-          listener: (context, dynamicState) {
-            if (dynamicState.isSubmitSuccess &&
-                dynamicState.stepEntity != null) {
-              final nextStep = dynamicState.stepEntity!;
-
-              context.read<DynamicStepsCubit>().resetState();
-
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-
-              _handleStepNavigation(nextStep);
-            }
-
-            if (dynamicState.isSubmitError) {
-              if (Navigator.canPop(context)) {
-                Navigator.pop(context);
-              }
-
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    dynamicState.failure?.message ??
-                        LocaleKeys.something_went_wrong_try_again.tr(),
-                  ),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
-          },
+          listener: _handleDynamicStepState,
           child: Stack(
             children: [
-              SingleChildScrollView(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildSectionTitle(
-                      LocaleKeys.nationality.tr(),
-                      isDarkMode,
-                      textTheme,
-                    ),
-                    BlocBuilder<ResourceGroupCubit, ResourceGroupState>(
-                      buildWhen: (previous, current) =>
-                          previous.resourceGroups != current.resourceGroups ||
-                          previous.resourceGroupsStatus !=
-                              current.resourceGroupsStatus,
-                      builder: (context, state) {
-                        if (state.resourceGroupsStatus ==
-                            RequestStatus.loading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state.resourceGroupsStatus == RequestStatus.error) {
-                          return Text(
-                            state.errorMessage ?? LocaleKeys.error_loading_nationalities.tr(),
-                          );
-                        }
-                        if (state.resourceGroups.isEmpty) {
-                          return  Text(LocaleKeys.no_nationalities_available.tr());
-                        }
-
-                        if (_selectedNationalityEntity == null) {
-                          _selectedNationalityEntity =
-                              state.resourceGroups.first;
-                          WidgetsBinding.instance.addPostFrameCallback(
-                            (_) => _triggerFetchPackages(),
-                          );
-                        }
-
-                        final nationalityNames = state.resourceGroups
-                            .map((e) => e.name as String)
-                            .toList();
-                        final currentName =
-                            _selectedNationalityEntity?.name ?? '';
-
-                        return HorizontalFilterWidget(
-                          items: nationalityNames,
-                          selectedValue: currentName,
-                          isDarkMode: isDarkMode,
-                          onSelected: (name) {
-                            setState(() {
-                              _selectedNationalityEntity = state.resourceGroups
-                                  .firstWhere((e) => e.name == name);
-                            });
-                            _triggerFetchPackages();
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 16.h),
-
-                    _buildSectionTitle(
-                      LocaleKeys.shifts.tr(),
-                      isDarkMode,
-                      textTheme,
-                    ),
-
-                    BlocBuilder<HourlyContractCubit, HourlyContractState>(
-                      buildWhen: (previous, current) =>
-                          previous.shifts.status != current.shifts.status ||
-                          previous.shifts.data != current.shifts.data,
-                      builder: (context, state) {
-                        if (state.shifts.status == RequestStatus.loading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state.shifts.data.isEmpty) {
-                          return  Text(LocaleKeys.no_shifts_available.tr());
-                        }
-
-                        if (_selectedShiftEntity == null) {
-                          _selectedShiftEntity = state.shifts.data.first;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _triggerFetchPackages();
-                            context.read<HourlyContractCubit>().getShiftHours(
-                              serviceId: widget.serviceId,
-                              shift: _selectedShiftEntity!.id ?? 0,
-                            );
-                          });
-                        }
-
-                        final shiftNames = state.shifts.data
-                            .map((e) => e.name ?? '')
-                            .toList();
-                        final currentShiftName =
-                            _selectedShiftEntity?.name ?? '';
-
-                        return HorizontalFilterWidget(
-                          items: shiftNames,
-                          selectedValue: currentShiftName,
-                          isDarkMode: isDarkMode,
-                          fixedWidth: 100.w,
-                          onSelected: (name) {
-                            setState(() {
-                              _selectedShiftEntity = state.shifts.data
-                                  .firstWhere((e) => e.name == name);
-                              _selectedHourEntity = null;
-                              _selectedTimeSlotEntity = null;
-                              _selectedDurationEntity = null;
-                            });
-                            _triggerFetchPackages();
-                            context.read<HourlyContractCubit>().getShiftHours(
-                              serviceId: widget.serviceId,
-                              shift: _selectedShiftEntity!.id ?? 0,
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 16.h),
-
-                    _buildSectionTitle(
-                      LocaleKeys.visitDuration.tr(),
-                      isDarkMode,
-                      textTheme,
-                    ),
-
-                    BlocBuilder<HourlyContractCubit, HourlyContractState>(
-                      buildWhen: (previous, current) =>
-                          previous.shiftHours.status !=
-                              current.shiftHours.status ||
-                          previous.shiftHours.data != current.shiftHours.data,
-                      builder: (context, state) {
-                        if (state.shiftHours.status == RequestStatus.loading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state.shiftHours.data.isEmpty) {
-                          return  Text(LocaleKeys.no_shift_hours_available.tr());
-                        }
-
-                        if (_selectedHourEntity == null) {
-                          _selectedHourEntity = state.shiftHours.data.first;
-                          WidgetsBinding.instance.addPostFrameCallback(
-                            (_) => _triggerFetchTimeSlots(),
-                          );
-                        }
-
-                        final hourValues = state.shiftHours.data
-                            .map((e) => e.value ?? '')
-                            .toList();
-                        final currentHourValue =
-                            _selectedHourEntity?.value ?? '';
-
-                        return HorizontalFilterWidget(
-                          items: hourValues,
-                          selectedValue: currentHourValue,
-                          isDarkMode: isDarkMode,
-                          onSelected: (val) {
-                            setState(() {
-                              _selectedHourEntity = state.shiftHours.data
-                                  .firstWhere((e) => e.value == val);
-                              _selectedTimeSlotEntity = null;
-                              _selectedDurationEntity = null;
-                            });
-                            _triggerFetchTimeSlots();
-                            context
-                                .read<HourlyContractCubit>()
-                                .updateSelectedHoursNumber(
-                                  _selectedHourEntity?.id,
-                                );
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 16.h),
-
-                    _buildSectionTitle(
-                      LocaleKeys.visitTime.tr(),
-                      isDarkMode,
-                      textTheme,
-                    ),
-                    BlocBuilder<HourlyContractCubit, HourlyContractState>(
-                      buildWhen: (previous, current) =>
-                          previous.timeSlots.status !=
-                              current.timeSlots.status ||
-                          previous.timeSlots.data != current.timeSlots.data,
-                      builder: (context, state) {
-                        if (state.timeSlots.status == RequestStatus.loading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state.timeSlots.data.isEmpty) {
-                          return  Text(
-                            LocaleKeys.no_time_slots_available.tr(),
-                          );
-                        }
-
-                        if (_selectedTimeSlotEntity == null ||
-                            !state.timeSlots.data.contains(
-                              _selectedTimeSlotEntity,
-                            )) {
-                          _selectedTimeSlotEntity = state.timeSlots.data.first;
-                          WidgetsBinding.instance.addPostFrameCallback((_) {
-                            _fetchDeliveryNotesAutomatically();
-                          });
-                        }
-
-                        final timeSlotValues = state.timeSlots.data
-                            .map((e) => e.value ?? '')
-                            .toList();
-                        final currentTimeSlotValue =
-                            _selectedTimeSlotEntity?.value ?? '';
-
-                        return HorizontalFilterWidget(
-                          items: timeSlotValues,
-                          selectedValue: currentTimeSlotValue,
-                          isDarkMode: isDarkMode,
-                          onSelected: (val) {
-                            setState(() {
-                              _selectedTimeSlotEntity = state.timeSlots.data
-                                  .firstWhere((e) => e.value == val);
-                              _selectedDurationEntity = null;
-                            });
-                            _fetchDeliveryNotesAutomatically();
-                            context
-                                .read<HourlyContractCubit>()
-                                .updateSelectedTimeSlotId(
-                                  _selectedTimeSlotEntity?.key,
-                                );
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 16.h),
-
-                    _buildSectionTitle(
-                      LocaleKeys.contractDuration.tr(),
-                      isDarkMode,
-                      textTheme,
-                    ),
-                    BlocBuilder<HourlyContractCubit, HourlyContractState>(
-                      buildWhen: (previous, current) =>
-                          previous.durations.status !=
-                              current.durations.status ||
-                          previous.durations.data != current.durations.data,
-                      builder: (context, state) {
-                        if (state.durations.status == RequestStatus.loading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state.durations.data.isEmpty) {
-                          return  Text(LocaleKeys.no_durations_available.tr());
-                        }
-
-                        _selectedDurationEntity ??= state.durations.data.first;
-
-                        final durationValues = state.durations.data
-                            .map((e) => e.value ?? '')
-                            .toList();
-                        final currentDurationValue =
-                            _selectedDurationEntity?.value ?? '';
-
-                        return HorizontalFilterWidget(
-                          items: durationValues,
-                          selectedValue: currentDurationValue,
-                          isDarkMode: isDarkMode,
-                          onSelected: (val) {
-                            setState(() {
-                              _selectedDurationEntity = state.durations.data
-                                  .firstWhere((e) => e.value == val);
-                            });
-                            context
-                                .read<HourlyContractCubit>()
-                                .updateSelectedDuration(
-                                  _selectedDurationEntity?.id,
-                                );
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 20.h),
-
-                    DeliveryNotesWidget(isDarkMode: isDarkMode),
-                    SizedBox(height: 20.h),
-
-                    _buildSectionTitle(
-                      LocaleKeys.packages.tr(),
-                      isDarkMode,
-                      textTheme,
-                    ),
-
-                    BlocBuilder<HourlyContractCubit, HourlyContractState>(
-                      buildWhen: (previous, current) =>
-                          previous.packages != current.packages ||
-                          previous.selectedDuration !=
-                              current.selectedDuration ||
-                          previous.selectedVisits != current.selectedVisits ||
-                          previous.selectedHoursNumber !=
-                              current.selectedHoursNumber ||
-                          previous.selectedTimeSlotId !=
-                              current.selectedTimeSlotId,
-                      builder: (context, state) {
-                        if (state.packages.status == RequestStatus.loading) {
-                          return const Center(
-                            child: CircularProgressIndicator(),
-                          );
-                        }
-                        if (state.packages.status == RequestStatus.error) {
-                          return Center(
-                            child: Text(
-                              state.packages.error ??
-                                  state.packages.error ?? LocaleKeys.error_loading_packages.tr(),
-                            ),
-                          );
-                        }
-                        if (state.packages.data.isEmpty) {
-                          return  Center(
-                            child: Text(LocaleKeys.no_packages_available.tr()),
-                          );
-                        }
-
-                        final filteredPackages = state.filteredPackages;
-
-                        if (filteredPackages.isEmpty) {
-                          return Container(
-                            padding: EdgeInsets.symmetric(vertical: 20.h),
-                            child: Center(
-                              child: Text(
-                                LocaleKeys.no_packages_match_filters.tr(),
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  color: isDarkMode
-                                      ? Colors.grey[400]
-                                      : Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          );
-                        }
-
-                        return ListView.separated(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          itemCount: filteredPackages.length,
-                          separatorBuilder: (_, __) => SizedBox(height: 12.h),
-                          itemBuilder: (context, index) {
-                            final package = filteredPackages[index];
-                            return PackageItemWidget(
-                              index: index,
-                              isExpanded: _expandedPackageIndex == index,
-                              isDarkMode: isDarkMode,
-                              package: package,
-                              properties: state.packageProperties,
-                              onExpand: () {
-                                setState(() {
-                                  _expandedPackageIndex =
-                                      _expandedPackageIndex == index
-                                      ? -1
-                                      : index;
-                                });
-                              },
-                              onSelect: () {
-                                setState(() {
-                                  _selectedPackage = package;
-                                });
-                                context
-                                    .read<DynamicStepsCubit>()
-                                    .executeDynamicStep(
-                                      controller:
-                                          widget.stepEntity.controller ?? '',
-                                      action: widget.stepEntity.action ?? '',
-                                      method:
-                                          widget.stepEntity.httpMethod ??
-                                          'POST',
-                                      queryParameters: {
-                                        "selectedPricingId":
-                                            package.selectedHourlyPricingId,
-                                        "stepId":
-                                            widget.stepEntity.stepId ?? "",
-                                      },
-                                    );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                    SizedBox(height: 80.h),
-                  ],
-                ),
-              ),
-              Align(
-                alignment: Alignment.bottomCenter,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: 16.h),
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pushNamed(
-                        RoutesManager.hourlySelectPackage,
-                        arguments: {
-                          'serviceId': widget.serviceId,
-                          'stepId': widget.stepEntity.stepId,
-                          'stepEntity': widget.stepEntity,
-                        },
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ColorsManager.black,
-                      foregroundColor: ColorsManager.white,
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 32.w,
-                        vertical: 14.h,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                      elevation: 4,
-                    ),
-                    child: Text(
-                      LocaleKeys.designYourOffer.tr(),
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.bold,
-                        color: ColorsManager.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
+              _buildMainContent(isDarkMode, textTheme),
+              _buildBottomButton(),
             ],
           ),
         ),
@@ -817,19 +335,285 @@ class _SelectPackageScreenState extends State<SelectPackageScreen> {
     );
   }
 
-  Widget _buildSectionTitle(
-    String title,
-    bool isDarkMode,
-    TextTheme textTheme,
-  ) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 8.h),
-      child: Text(
-        title,
-        style: textTheme.displayMedium?.copyWith(
-          fontSize: 14.sp,
-          fontWeight: FontWeight.bold,
-          color: isDarkMode ? ColorsManager.white70 : ColorsManager.black,
+  AppBar _buildAppBar(bool isDarkMode, TextTheme textTheme) {
+    return AppBar(
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
+      elevation: 0,
+      centerTitle: true,
+      title: Text(
+        LocaleKeys.select_package.tr(),
+        style: textTheme.displayLarge?.copyWith(
+          fontSize: 20.sp,
+          color: isDarkMode ? ColorsManager.white : ColorsManager.black,
+        ),
+      ),
+    );
+  }
+
+  void _handleDynamicStepState(BuildContext context, DynamicStepsState dynamicState) {
+    if (dynamicState.isSubmitSuccess && dynamicState.stepEntity != null) {
+      final nextStep = dynamicState.stepEntity!;
+      context.read<DynamicStepsCubit>().resetState();
+
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      _handleStepNavigation(nextStep);
+    }
+
+    if (dynamicState.isSubmitError) {
+      if (Navigator.canPop(context)) {
+        Navigator.pop(context);
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            dynamicState.failure?.message ?? LocaleKeys.something_went_wrong_try_again.tr(),
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
+  Widget _buildMainContent(bool isDarkMode, TextTheme textTheme) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ✅ Nationality Filter
+          SectionTitleWidget(
+            title: LocaleKeys.nationality.tr(),
+            isDarkMode: isDarkMode,
+          ),
+          NationalityFilterWidget(
+            isDarkMode: isDarkMode,
+            selectedNationality: _selectedNationalityEntity,
+            onSelected: (entity) {
+              setState(() {
+                _selectedNationalityEntity = entity;
+              });
+              _triggerFetchPackages();
+            },
+          ),
+          SizedBox(height: 16.h),
+
+          // ✅ Shifts Filter
+          SectionTitleWidget(
+            title: LocaleKeys.shifts.tr(),
+            isDarkMode: isDarkMode,
+          ),
+          ShiftFilterWidget(
+            isDarkMode: isDarkMode,
+            serviceId: widget.serviceId,
+            selectedShift: _selectedShiftEntity,
+            onSelected: (shift) {
+              setState(() {
+                _selectedShiftEntity = shift;
+                _selectedHourEntity = null;
+                _selectedTimeSlotEntity = null;
+                _selectedDurationEntity = null;
+              });
+              _triggerFetchPackages();
+              context.read<HourlyContractCubit>().getShiftHours(
+                serviceId: widget.serviceId,
+                shift: shift.id ?? 0,
+              );
+            },
+          ),
+          SizedBox(height: 16.h),
+
+          // ✅ Visit Duration Filter
+          SectionTitleWidget(
+            title: LocaleKeys.visitDuration.tr(),
+            isDarkMode: isDarkMode,
+          ),
+          VisitDurationFilterWidget(
+            isDarkMode: isDarkMode,
+            selectedHour: _selectedHourEntity,
+            onSelected: (hour) {
+              setState(() {
+                _selectedHourEntity = hour;
+                _selectedTimeSlotEntity = null;
+                _selectedDurationEntity = null;
+              });
+              _triggerFetchTimeSlots();
+              context.read<HourlyContractCubit>().updateSelectedHoursNumber(
+                _selectedHourEntity?.id,
+              );
+            },
+          ),
+          SizedBox(height: 16.h),
+
+          SectionTitleWidget(
+            title: LocaleKeys.visitTime.tr(),
+            isDarkMode: isDarkMode,
+          ),
+          VisitTimeFilterWidget(
+            isDarkMode: isDarkMode,
+            selectedTimeSlot: _selectedTimeSlotEntity,
+            onSelected: (timeSlot) {
+              setState(() {
+                _selectedTimeSlotEntity = timeSlot;
+                _selectedDurationEntity = null;
+              });
+              _fetchDeliveryNotesAutomatically();
+              context.read<HourlyContractCubit>().updateSelectedTimeSlotId(
+                _selectedTimeSlotEntity?.key,
+              );
+            },
+          ),
+          SizedBox(height: 16.h),
+
+          SectionTitleWidget(
+            title: LocaleKeys.contractDuration.tr(),
+            isDarkMode: isDarkMode,
+          ),
+          ContractDurationFilterWidget(
+            isDarkMode: isDarkMode,
+            selectedDuration: _selectedDurationEntity,
+            onSelected: (duration) {
+              setState(() {
+                _selectedDurationEntity = duration;
+              });
+              context.read<HourlyContractCubit>().updateSelectedDuration(
+                _selectedDurationEntity?.id,
+              );
+            },
+          ),
+          SizedBox(height: 20.h),
+
+          // ✅ Delivery Notes
+          DeliveryNotesWidget(isDarkMode: isDarkMode),
+          SizedBox(height: 20.h),
+
+          // ✅ Packages List
+          SectionTitleWidget(
+            title: LocaleKeys.packages.tr(),
+            isDarkMode: isDarkMode,
+          ),
+          _buildPackagesList(isDarkMode),
+          SizedBox(height: 80.h),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPackagesList(bool isDarkMode) {
+    return BlocBuilder<HourlyContractCubit, HourlyContractState>(
+      buildWhen: (previous, current) =>
+      previous.packages != current.packages ||
+          previous.selectedDuration != current.selectedDuration ||
+          previous.selectedVisits != current.selectedVisits ||
+          previous.selectedHoursNumber != current.selectedHoursNumber ||
+          previous.selectedTimeSlotId != current.selectedTimeSlotId,
+      builder: (context, state) {
+        if (state.packages.status == RequestStatus.loading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        if (state.packages.status == RequestStatus.error) {
+          return Center(
+            child: Text(state.packages.error ?? LocaleKeys.error_loading_packages.tr()),
+          );
+        }
+
+        if (state.packages.data.isEmpty) {
+          return Center(child: Text(LocaleKeys.no_packages_available.tr()));
+        }
+
+        final filteredPackages = state.filteredPackages;
+
+        if (filteredPackages.isEmpty) {
+          return Container(
+            padding: EdgeInsets.symmetric(vertical: 20.h),
+            child: Center(
+              child: Text(
+                LocaleKeys.no_packages_match_filters.tr(),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          itemCount: filteredPackages.length,
+          separatorBuilder: (_, __) => SizedBox(height: 12.h),
+          itemBuilder: (context, index) {
+            final package = filteredPackages[index];
+            return PackageItemWidget(
+              index: index,
+              isExpanded: _expandedPackageIndex == index,
+              isDarkMode: isDarkMode,
+              package: package,
+              properties: state.packageProperties,
+              onExpand: () {
+                setState(() {
+                  _expandedPackageIndex = _expandedPackageIndex == index ? -1 : index;
+                });
+              },
+              onSelect: () {
+                setState(() {
+                  _selectedPackage = package;
+                });
+                context.read<DynamicStepsCubit>().executeDynamicStep(
+                  controller: widget.stepEntity.controller ?? '',
+                  action: widget.stepEntity.action ?? '',
+                  method: widget.stepEntity.httpMethod ?? 'POST',
+                  queryParameters: {
+                    "selectedPricingId": package.selectedHourlyPricingId,
+                    "stepId": widget.stepEntity.stepId ?? "",
+                  },
+                );
+              },
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildBottomButton() {
+    return Align(
+      alignment: Alignment.bottomCenter,
+      child: Padding(
+        padding: EdgeInsets.only(bottom: 16.h),
+        child: ElevatedButton(
+          onPressed: () {
+            Navigator.of(context).pushNamed(
+              RoutesManager.hourlySelectPackage,
+              arguments: {
+                'serviceId': widget.serviceId,
+                'stepId': widget.stepEntity.stepId,
+                'stepEntity': widget.stepEntity,
+              },
+            );
+          },
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ColorsManager.black,
+            foregroundColor: ColorsManager.white,
+            padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 14.h),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            elevation: 4,
+          ),
+          child: Text(
+            LocaleKeys.designYourOffer.tr(),
+            style: TextStyle(
+              fontSize: 15.sp,
+              fontWeight: FontWeight.bold,
+              color: ColorsManager.white,
+            ),
+          ),
         ),
       ),
     );

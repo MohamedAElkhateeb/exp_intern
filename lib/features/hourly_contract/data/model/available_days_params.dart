@@ -43,4 +43,20 @@ class AvailableDaysParams {
       'timeSlotId': timeSlotId,
     };
   }
-}
+  factory AvailableDaysParams.fromJson(Map<String, dynamic> json) {
+    return AvailableDaysParams(
+      selectedHourlyPricingId: json['selectedHourlyPricingId'],
+      resourceGroupId: json['resourceGroupId'] ?? '',
+      serviceId: json['serviceId'] ?? '',
+      contractStartDate: json['contractStartDate'] ?? '',
+      contractDuration: json['contractDuration'] ?? '',
+      hoursCount: json['hoursCount'] ?? '',
+      empcount: json['empcount'] ?? '',
+      weeklyvisits: json['weeklyvisits'] ?? '',
+      visitShift: json['visitShift'] ?? '',
+      promotionCode: json['promotionCode'],
+      days: json['days'] ?? '',
+      timeSlotId: json['timeSlotId'] ?? '',
+    );
+  }
+  }

@@ -2,7 +2,7 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_service.dart';
-import '../../../../core/utils/endpoint_manger.dart';
+import '../../../../core/utils/endpoint_manager.dart';
 
 @LazySingleton()
 class AddressesRemoteDataSource {
@@ -22,4 +22,5 @@ class AddressesRemoteDataSource {
 
     );
   }
+
 }

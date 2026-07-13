@@ -1,11 +1,13 @@
 import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_service.dart';
 import '../../../../core/utils/base_model.dart';
-import '../../../../core/utils/endpoint_manger.dart';
+import '../../../../core/utils/endpoint_manager.dart';
 import '../model/available_day_with_date_model.dart';
 import '../model/available_days_params.dart';
 import '../model/contract_duration_model.dart';
+import '../model/contract_success_model.dart';
 import '../model/hourly_packages_result_model.dart';
+import '../model/hourly_pricing_response_model.dart';
 import '../model/num_of_visits_model.dart';
 import '../model/shift_hours_model.dart';
 import '../model/shift_model.dart';
@@ -150,11 +152,37 @@ class HourlyContractRemoteDataSource {
         'shift': shift,
       },
     );
-
-    // بنمرر الـ json بالكامل (الـ data object) للـ HourlyPackagesResultModel
     return BaseResponse.fromJson(
       response.data,
           (jsonT) => HourlyPackagesResultModel.fromJson(jsonT as Map<String, dynamic>),
+    );
+  }
+  Future<BaseResponse<HourlyPricingResponseModel>> getHourlyPricing({
+    required String stepId,
+    required Map<String, dynamic> data,
+  }) async {
+    final response = await _apiService.postData(
+      path: EndpointsManager.hourlyPricing,
+      queryParameters: {'stepId': stepId},
+      data: data,
+    );
+
+    return BaseResponse.fromJson(
+      response.data,
+          (jsonT) => HourlyPricingResponseModel.fromJson(jsonT as Map<String, dynamic>),
+    );
+  }
+  Future<BaseResponse<ContractSuccessModel>> getContractSuccessData({
+    required String stepId,
+  }) async {
+    final response = await _apiService.getData(
+      path: EndpointsManager.contractSuccessData,
+      queryParameters: {'stepId': stepId},
+    );
+
+    return BaseResponse.fromJson(
+      response.data,
+          (jsonT) => ContractSuccessModel.fromJson(jsonT as Map<String, dynamic>),
     );
   }
 }

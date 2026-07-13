@@ -1,7 +1,7 @@
 import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_service.dart';
 import '../../../../core/utils/base_model.dart';
-import '../../../../core/utils/endpoint_manger.dart';
+import '../../../../core/utils/endpoint_manager.dart';
 import '../model/nationality_model.dart';
 
 abstract class NationalityRemoteDataSource {

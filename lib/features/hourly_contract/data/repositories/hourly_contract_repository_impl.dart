@@ -5,6 +5,7 @@ import '../../../../core/errors/error_handler.dart';
 import '../../../../core/errors/failures.dart';
 import '../../domain/entities/available_day_with_date_entity.dart';
 import '../../domain/entities/contract_duration_entity.dart';
+import '../../domain/entities/contract_success_entity.dart';
 import '../../domain/entities/hourly_packages_result_entity.dart';
 import '../../domain/entities/num_of_visits_entity.dart';
 import '../../domain/entities/selected_package_entity.dart';
@@ -14,6 +15,7 @@ import '../../domain/entities/worker_count_entity.dart';
 import '../../domain/repositories/hourly_contract_repository.dart';
 import '../data_source/hourly_contract_remote_data_source.dart';
 import '../model/available_days_params.dart';
+import '../model/hourly_pricing_response_model.dart';
 import '../model/time_slot_param.dart';
 
 @LazySingleton(as: HourlyContractRepository)
@@ -138,6 +140,32 @@ class HourlyContractRepositoryImpl implements HourlyContractRepository {
         nationalityId: nationalityId,
         shift: shift,
       );
+      return Right(response.data!);
+    } catch (e) {
+      return Left(ErrorHandler.handleException(e));
+    }
+  }
+  @override
+  Future<Either<Failure, HourlyPricingResponseModel>> getHourlyPricing({
+    required String stepId,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      final response = await _remoteDataSource.getHourlyPricing(
+        stepId: stepId,
+        data: data,
+      );
+      return Right(response.data!);
+    } catch (e) {
+      return Left(ErrorHandler.handleException(e));
+    }
+  }
+  @override
+  Future<Either<Failure, ContractSuccessEntity>> getContractSuccessData({
+    required String stepId,
+  }) async {
+    try {
+      final response = await _remoteDataSource.getContractSuccessData(stepId: stepId);
       return Right(response.data!);
     } catch (e) {
       return Left(ErrorHandler.handleException(e));

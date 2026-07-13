@@ -19,29 +19,57 @@ class AppCalendarPicker extends StatelessWidget {
     this.maxDateString,
   });
 
+  DateTime _parseDate(String? dateString) {
+    if (dateString == null) return DateTime.now();
+
+    final cleanDate = dateString.trim().split(' ')[0];
+
+    try {
+      return DateFormat("yyyy-MM-dd").parse(cleanDate);
+    } catch (_) {}
+
+    try {
+      return DateFormat("M/d/yyyy").parse(cleanDate);
+    } catch (_) {}
+
+    try {
+      return DateFormat("dd/MM/yyyy").parse(cleanDate);
+    } catch (_) {}
+
+    return DateTime.now();
+  }
+
   @override
   Widget build(BuildContext context) {
-    DateTime firstAvailableDate = DateTime.now();
-    DateTime lastAvailableDate = DateTime.now().add(const Duration(days: 30));
+    DateTime firstAvailableDate = _parseDate(minDateString);
+    DateTime lastAvailableDate = _parseDate(maxDateString);
 
-    if (minDateString != null) {
-      try {
-        firstAvailableDate = DateFormat("M/d/yyyy").parse(minDateString!.split(' ')[0]);
-      } catch (_) {}
+    // ✅ تأكد أن firstDate <= lastDate
+    if (firstAvailableDate.isAfter(lastAvailableDate)) {
+      firstAvailableDate = lastAvailableDate;
     }
 
-    if (maxDateString != null) {
-      try {
-        lastAvailableDate = DateFormat("M/d/yyyy").parse(maxDateString!.split(' ')[0]);
-      } catch (_) {}
+    // ✅ تحديد initialDate
+    DateTime initialDate;
+    if (selectedDate != null) {
+      initialDate = selectedDate!;
+    } else {
+      initialDate = firstAvailableDate;
     }
 
-    DateTime initialPickerDate = DateTime.now();
-    if (initialPickerDate.isBefore(firstAvailableDate)) {
-      initialPickerDate = firstAvailableDate;
-    } else if (initialPickerDate.isAfter(lastAvailableDate)) {
-      initialPickerDate = lastAvailableDate;
+    // ✅ تأكد أن initialDate >= firstDate
+    if (initialDate.isBefore(firstAvailableDate)) {
+      initialDate = firstAvailableDate;
     }
+
+    // ✅ تأكد أن initialDate <= lastDate
+    if (initialDate.isAfter(lastAvailableDate)) {
+      initialDate = lastAvailableDate;
+    }
+
+    debugPrint('📅 firstAvailableDate: $firstAvailableDate');
+    debugPrint('📅 lastAvailableDate: $lastAvailableDate');
+    debugPrint('📅 initialDate: $initialDate');
 
     return Theme(
       data: Theme.of(context).copyWith(
@@ -57,7 +85,7 @@ class AppCalendarPicker extends StatelessWidget {
         width: 320.w,
         height: 330.h,
         child: CalendarDatePicker(
-          initialDate: selectedDate ?? initialPickerDate,
+          initialDate: initialDate,
           firstDate: firstAvailableDate,
           lastDate: lastAvailableDate,
           onDateChanged: onDateSelected,

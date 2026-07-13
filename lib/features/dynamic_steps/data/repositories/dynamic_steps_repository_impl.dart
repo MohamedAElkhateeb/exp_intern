@@ -42,4 +42,35 @@ class DynamicStepsRepositoryImpl implements DynamicStepsRepository {
       return Left(ErrorHandler.handleException(e));
     }
   }
+  @override
+  Future<Either<Failure, DynamicStepEntity>> getStepDetailsByActionName({
+    required String stepId,
+    required String actionName,
+    required int serviceType,
+  }) async {
+    try {
+      final response = await _remoteDataSource.getStepDetailsByActionName(
+        stepId: stepId,
+        actionName: actionName,
+        serviceType: serviceType,
+      );
+
+      final responseModel = BaseResponse<DynamicStepModel>.fromJson(
+        response.data,
+            (json) => DynamicStepModel.fromJson(json as Map<String, dynamic>),
+      );
+
+      if (responseModel.status == 200 && responseModel.data != null) {
+        return Right(responseModel.data!);
+      } else {
+        return Left(
+          ServerFailure(
+            message: responseModel.message ?? LocaleKeys.data_error.tr(),
+          ),
+        );
+      }
+    } catch (e) {
+      return Left(ErrorHandler.handleException(e));
+    }
+  }
 }

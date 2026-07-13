@@ -2,7 +2,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 class EndpointsManager {
-  static const String baseUrl = 'https://crmtest.massadrhr.com:8006';
+  static const String baseUrl = 'https://mueen-apitest.azurewebsites.net/';
 
   static BuildContext? _context;
 
@@ -64,7 +64,18 @@ class EndpointsManager {
 
   static String get getArrivalTime =>
       _getLocalizedPath('/HourlyTimeSlot/GetArrivalTime');
+
   static String get availableDaysWithDate =>
       _getLocalizedPath('/HourlyPricing/AvailableDaysWithDate');
-  static String get fixedPackages => _getLocalizedPath('/HourlyContract/FixedPackage');
+
+  static String get fixedPackages =>
+      _getLocalizedPath('/HourlyContract/FixedPackage');
+
+  static String get hourlyPricing =>
+      _getLocalizedPath('/HourlyPricing/HourlyPricing');
+
+  static String get stepDetailsByActionName =>
+      _getLocalizedPath('/Steps/StepDetailsByActionName');
+  static String get contractSuccessData =>
+      _getLocalizedPath('/HourlyContract/contractSuccessData');
 }

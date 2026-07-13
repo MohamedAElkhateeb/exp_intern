@@ -4,4 +4,9 @@ import '../entity/dynamic_step_entity.dart';
 
 abstract class DynamicStepsRepository {
   Future<Either<Failure, DynamicStepEntity>> getFirstStep({required int serviceType, required String serviceId});
+  Future<Either<Failure, DynamicStepEntity>> getStepDetailsByActionName({
+    required String stepId,
+    required String actionName,
+    required int serviceType,
+  });
 }

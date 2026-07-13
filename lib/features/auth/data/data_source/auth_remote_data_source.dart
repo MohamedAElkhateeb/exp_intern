@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:exp_intern/core/utils/endpoint_manger.dart';
+import 'package:exp_intern/core/utils/endpoint_manager.dart';
 import 'package:injectable/injectable.dart';
 import '../../../../core/network/api_service.dart';
 @LazySingleton()

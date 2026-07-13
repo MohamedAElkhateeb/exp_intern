@@ -1,7 +1,10 @@
 import '../../../../core/utils/dataState_generic_state.dart';
 import '../../../../core/utils/request_status_enum.dart';
+import '../../data/model/available_days_params.dart';
+import '../../data/model/hourly_pricing_response_model.dart';
 import '../../domain/entities/available_day_with_date_entity.dart';
 import '../../domain/entities/contract_duration_entity.dart';
+import '../../domain/entities/contract_success_entity.dart';
 import '../../domain/entities/num_of_visits_entity.dart';
 import '../../domain/entities/package_property_configEntity.dart';
 import '../../domain/entities/selected_package_entity.dart';
@@ -29,6 +32,11 @@ class HourlyContractState {
   final int? selectedVisits;
   final int? selectedHoursNumber;
   final String? selectedTimeSlotId;
+  final RequestStatus hourlyPricingStatus;
+  final String? hourlyPricingError;
+  final HourlyPricingResponseModel? hourlyPricingData;
+  final DataState<ContractSuccessEntity> contractSuccessData;
+
 
   const HourlyContractState({
     this.shifts = const DataState(),
@@ -46,6 +54,10 @@ class HourlyContractState {
     this.selectedVisits,
     this.selectedHoursNumber,
     this.selectedTimeSlotId,
+    this.hourlyPricingStatus = RequestStatus.initial,
+    this.hourlyPricingError,
+    this.hourlyPricingData,
+    this.contractSuccessData = const DataState(),
   });
 
   List<SelectedPackageEntity> get filteredPackages {
@@ -84,6 +96,10 @@ class HourlyContractState {
     int? selectedVisits,
     int? selectedHoursNumber,
     String? selectedTimeSlotId,
+    RequestStatus? hourlyPricingStatus,
+    String? hourlyPricingError,
+    HourlyPricingResponseModel? hourlyPricingData,
+    DataState<ContractSuccessEntity>? contractSuccessData,
   }) {
     return HourlyContractState(
       shifts: shifts ?? this.shifts,
@@ -101,6 +117,10 @@ class HourlyContractState {
       selectedVisits: selectedVisits ?? this.selectedVisits,
       selectedHoursNumber: selectedHoursNumber ?? this.selectedHoursNumber,
       selectedTimeSlotId: selectedTimeSlotId ?? this.selectedTimeSlotId,
+      hourlyPricingData: hourlyPricingData??this.hourlyPricingData,
+      hourlyPricingError:hourlyPricingError??this.hourlyPricingError,
+      hourlyPricingStatus:hourlyPricingStatus??this.hourlyPricingStatus ,
+      contractSuccessData: contractSuccessData ?? this.contractSuccessData,
     );
   }
 }

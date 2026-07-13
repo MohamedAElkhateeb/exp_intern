@@ -115,10 +115,11 @@ class _SavedAddressesScreenState extends State<SavedAddressesScreen> {
             if (dynamicState.isSubmitSuccess) {
               final nextStep = dynamicState.stepEntity;
 
+
               context.read<DynamicStepsCubit>().resetState();
               Navigator.pushNamed(
                 context,
-                nextStep!.name!,
+                nextStep?.name??'',
                 arguments: {
                   'serviceId': widget.serviceId,
                   'stepEntity': nextStep ,
