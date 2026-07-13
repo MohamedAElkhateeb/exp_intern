@@ -158,7 +158,7 @@ class _RequestInspectorState extends State<RequestInspector> {
               style: TextStyle(
                 color: isSuccess ? Colors.green : Colors.red,
                 fontWeight: FontWeight.bold,
-                fontSize: 22.sp,
+                fontSize: 20.sp,
               ),
             ),
             SizedBox(height: 4.h),
@@ -167,14 +167,14 @@ class _RequestInspectorState extends State<RequestInspector> {
               style: TextStyle(
                 color: isSuccess ? Colors.green : Colors.red,
                 fontWeight: FontWeight.bold,
-                fontSize: 22.sp,
+                fontSize: 20.sp,
               ),
             ),
             SizedBox(height: 4.h),
             Text(
               e.url ?? '',
               style: TextStyle(
-                fontSize: 22.sp,
+                fontSize: 20.sp,
                 color: Colors.grey.shade700,
               ),
             ),
@@ -214,7 +214,7 @@ class _RequestInspectorState extends State<RequestInspector> {
                       style: TextStyle(
                         color: e.status == "200" ? Colors.green : Colors.red,
                         fontWeight: FontWeight.bold,
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                     SizedBox(height: 4.h),
@@ -225,7 +225,7 @@ class _RequestInspectorState extends State<RequestInspector> {
                       style: TextStyle(
                         color: e.status == "200" ? Colors.green : Colors.red,
                         fontWeight: FontWeight.bold,
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                     SizedBox(height: 10.h),
@@ -235,13 +235,13 @@ class _RequestInspectorState extends State<RequestInspector> {
                       "URL =>",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                     Text(
                       e.url ?? '',
                       style: TextStyle(
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                         color: Colors.grey.shade700,
                       ),
                     ),
@@ -254,13 +254,13 @@ class _RequestInspectorState extends State<RequestInspector> {
                       "Header =>",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                     Text(
                       _formatJson(e.header),
                       style: TextStyle(
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                     SizedBox(height: 10.h),
@@ -273,13 +273,13 @@ class _RequestInspectorState extends State<RequestInspector> {
                         "BODY =>",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 22.sp,
+                          fontSize: 20.sp,
                         ),
                       ),
                       Text(
                         _formatJson(e.body),
                         style: TextStyle(
-                          fontSize: 22.sp,
+                          fontSize: 20.sp,
                         ),
                       ),
                       SizedBox(height: 10.h),
@@ -291,13 +291,13 @@ class _RequestInspectorState extends State<RequestInspector> {
                       "RESPONSE =>",
                       style: TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                     Text(
                       _formatJson(e.response),
                       style: TextStyle(
-                        fontSize: 22.sp,
+                        fontSize: 20.sp,
                       ),
                     ),
                   ],

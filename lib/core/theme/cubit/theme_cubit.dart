@@ -1,8 +1,6 @@
-// lib/core/themes/cubit/theme_cubit.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-// جزء الـ states (نفس اللي فوق)
 abstract class ThemeState {
   const ThemeState();
 }
@@ -15,17 +13,14 @@ class ThemeChanged extends ThemeState {
   const ThemeChanged({required this.isDarkMode});
 }
 
-// الـ Cubit
 class ThemeCubit extends Cubit<ThemeState> {
-  ThemeCubit() : super(ThemeInitial()) {
-    _loadSavedTheme();
-  }
+  ThemeCubit() : super(ThemeInitial());
 
   bool _isDarkMode = false;
 
   bool get isDarkMode => _isDarkMode;
 
-  Future<void> _loadSavedTheme() async {
+  Future<void> loadSavedTheme() async {
     // TODO: Load from SharedPreferences
     // SharedPreferences prefs = await SharedPreferences.getInstance();
     // _isDarkMode = prefs.getBool('isDarkMode') ?? false;

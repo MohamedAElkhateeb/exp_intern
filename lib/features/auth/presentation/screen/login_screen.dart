@@ -25,10 +25,13 @@ class LoginScreen extends StatefulWidget {
   State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> with AutomaticKeepAliveClientMixin {
   final formKey = GlobalKey<FormState>();
   final phoneController = TextEditingController();
   final passwordController = TextEditingController();
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void dispose() {
@@ -36,33 +39,32 @@ class _LoginScreenState extends State<LoginScreen> {
     passwordController.dispose();
     super.dispose();
   }
+
   @override
   Widget build(BuildContext context) {
+    super.build(context);
 
-    final isDarkMode = context.watch<ThemeCubit>().isDarkMode;
+    final isDarkMode = context.select<ThemeCubit, bool>(
+          (cubit) => cubit.isDarkMode,
+    );
 
+    // ✅ الحل: استخدام ValueKey مع اللغة عشان ي强迫 إعادة بناء النصوص بس مش الشاشة كلها
     return Scaffold(
+      key: ValueKey('login_screen_${context.locale.languageCode}'),
       backgroundColor: isDarkMode
           ? ColorsManager.darkBackground
           : ColorsManager.white,
       body: SafeArea(
-        child: BlocListener<AuthCubit, AuthState>(
+        child: BlocConsumer<AuthCubit, AuthState>(
           listener: (context, state) {
             if (state is AuthSuccess) {
-              // إخفاء أي سناك بار ظاهر قبل الانتقال
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
-              // إظهار رسالة ترحيبية للمستخدم بالاسم الراجع من الـ Entity النظيفة
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text(
-                    LocaleKeys.login_success.tr(),
-                  ),
+                  content: Text(LocaleKeys.login_success.tr()),
                   backgroundColor: Colors.green,
                 ),
               );
-
-              // الانتقال إلى الشاشة الرئيسية ومسح شاشات الـ Auth من الـ Stack
               Navigator.pushNamedAndRemoveUntil(
                 context,
                 RoutesManager.home,
@@ -70,12 +72,9 @@ class _LoginScreenState extends State<LoginScreen> {
               );
             } else if (state is AuthFailure) {
               ScaffoldMessenger.of(context).hideCurrentSnackBar();
-
               final failure = state.failure;
 
-              // 🎨 شكل مختلف حسب نوع الخطأ
               if (failure is NetworkFailure) {
-                // 📶 خطأ شبكة - لون برتقالي
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Row(
@@ -126,75 +125,68 @@ class _LoginScreenState extends State<LoginScreen> {
               }
             }
           },
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(horizontal: 24.w),
-            child: Form(
-              key: formKey,
-              child: Column(
-                key: ValueKey(context.locale.languageCode),
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  SizedBox(height: 80.h),
-                  CustomLogo(fontSize: 50.sp),
-                  SizedBox(height: 60.h),
-                  Text(
-                    LocaleKeys.login_title.tr(),
-                    style: LightAppStyle.title.copyWith(
-                      color: isDarkMode
-                          ? ColorsManager.white
-                          : ColorsManager.black,
+          builder: (context, state) {
+            return SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 24.w),
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    SizedBox(height: 80.h),
+                    const CustomLogo(fontSize: 50),
+                    SizedBox(height: 60.h),
+                    Text(
+                      LocaleKeys.login_title.tr(),
+                      style: LightAppStyle.title.copyWith(
+                        color: isDarkMode
+                            ? ColorsManager.white
+                            : ColorsManager.black,
+                      ),
                     ),
-                  ),
-                  SizedBox(height: 8.h),
-                  Text(
-                    LocaleKeys.login_subtitle.tr(),
-                    style: LightAppStyle.subtitle.copyWith(
-                      color: isDarkMode
-                          ? ColorsManager.white70
-                          : ColorsManager.greyText,
+                    SizedBox(height: 8.h),
+                    Text(
+                      LocaleKeys.login_subtitle.tr(),
+                      style: LightAppStyle.subtitle.copyWith(
+                        color: isDarkMode
+                            ? ColorsManager.white70
+                            : ColorsManager.greyText,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
-                    textAlign: TextAlign.center,
-                  ),
-                  SizedBox(height: 40.h),
-                  CustomTextField(
-                    label: LocaleKeys.phone_label.tr(),
-                    keyboardType: TextInputType.phone,
-                    controller: phoneController,
-                    validator: (value) => Validators.phone(value),
-                  ),
-                  SizedBox(height: 24.h),
-                  CustomTextField(
-                    label: LocaleKeys.password_label.tr(),
-                    isPassword: true,
-                    controller: passwordController,
-                    validator: (value) => Validators.password(value),
-                  ),
-                  SizedBox(height: 16.h),
-                  AuthQuestionRow(
-                    question: LocaleKeys.forgot_password_question.tr(),
-                    actionText: LocaleKeys.reset_password.tr(),
-                    onActionTap: () {
-                      Navigator.pushNamed(
-                        context,
-                        RoutesManager.forgetPassword,
-                      );
-                    },
-                  ),
-                  SizedBox(height: 24.h),
+                    SizedBox(height: 40.h),
+                    CustomTextField(
+                      label: LocaleKeys.phone_label.tr(),
+                      keyboardType: TextInputType.phone,
+                      controller: phoneController,
+                      validator: (value) => Validators.phone(value),
+                    ),
+                    SizedBox(height: 24.h),
+                    CustomTextField(
+                      label: LocaleKeys.password_label.tr(),
+                      isPassword: true,
+                      controller: passwordController,
+                      validator: (value) => Validators.password(value),
+                    ),
+                    SizedBox(height: 16.h),
+                    AuthQuestionRow(
+                      question: LocaleKeys.forgot_password_question.tr(),
+                      actionText: LocaleKeys.reset_password.tr(),
+                      onActionTap: () {
+                        Navigator.pushNamed(
+                          context,
+                          RoutesManager.forgetPassword,
+                        );
+                      },
+                    ),
+                    SizedBox(height: 24.h),
 
-                  BlocBuilder<AuthCubit, AuthState>(
-                    builder: (context, state) {
-                      if (state is AuthLoading) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      return CustomElevatedButton(
+                    if (state is AuthLoading)
+                      const Center(child: CircularProgressIndicator())
+                    else
+                      CustomElevatedButton(
                         text: LocaleKeys.login_button.tr(),
                         onPressed: () {
-                          final state = context.read<AuthCubit>().state;
-
-                          if (state is AuthLoading) return; // 🔥 يمنع الضغط المتكرر
-
                           if (formKey.currentState!.validate()) {
                             context.read<AuthCubit>().loginUser(
                               userName: phoneController.text.trim(),
@@ -202,38 +194,37 @@ class _LoginScreenState extends State<LoginScreen> {
                             );
                           }
                         },
-                      );
-                    },
-                  ),
+                      ),
 
-                  SizedBox(height: 24.h),
-                  AuthQuestionRow(
-                    question: LocaleKeys.no_account_question.tr(),
-                    actionText: ColorsManager.white == ColorsManager.white ? LocaleKeys.create_account.tr() : '',
-                    onActionTap: () {
-                      Navigator.pushNamed(context, RoutesManager.register);
-                    },
-                  ),
-                  SizedBox(height: 20.h),
-                  GestureDetector(
-                    onTap: () {},
-                    child: Text(
-                      LocaleKeys.skip_now.tr(),
-                      style: LightAppStyle.bodyText.copyWith(
-                        fontWeight: FontWeight.bold,
-                        color: isDarkMode
-                            ? ColorsManager.white80
-                            : ColorsManager.black,
+                    SizedBox(height: 24.h),
+                    AuthQuestionRow(
+                      question: LocaleKeys.no_account_question.tr(),
+                      actionText: LocaleKeys.create_account.tr(),
+                      onActionTap: () {
+                        Navigator.pushNamed(context, RoutesManager.register);
+                      },
+                    ),
+                    SizedBox(height: 20.h),
+                    GestureDetector(
+                      onTap: () {},
+                      child: Text(
+                        LocaleKeys.skip_now.tr(),
+                        style: LightAppStyle.bodyText.copyWith(
+                          fontWeight: FontWeight.bold,
+                          color: isDarkMode
+                              ? ColorsManager.white80
+                              : ColorsManager.black,
+                        ),
                       ),
                     ),
-                  ),
-                  SizedBox(height: 40.h),
-                  const LanguageSwitchRow(),
-                  SizedBox(height: 24.h),
-                ],
+                    SizedBox(height: 40.h),
+                    const LanguageSwitchRow(),
+                    SizedBox(height: 24.h),
+                  ],
+                ),
               ),
-            ),
-          ),
+            );
+          },
         ),
       ),
     );
