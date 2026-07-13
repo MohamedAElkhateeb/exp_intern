@@ -196,9 +196,8 @@ class _RequestInspectorState extends State<RequestInspector> {
         // ✅ حط GestureDetector على الـ Content كله
         content: GestureDetector(
           onTap: () {
+            // ✅ ينسخ بس من غير ما يقفل الـ Dialog
             _copyToClipboard(e);
-            Navigator.pop(dialogContext);
-            _showInspectorOverlay();
             NavigationService.showSnackBar("✅ Copied done");
           },
           child: Container(
@@ -311,8 +310,8 @@ class _RequestInspectorState extends State<RequestInspector> {
           TextButton(
             onPressed: () {
               _copyToClipboard(e);
-              Navigator.pop(dialogContext);
-              _showInspectorOverlay();
+              // ✅ من غير ما يقفل، بس ينسخ
+              NavigationService.showSnackBar("✅ Copied done");
             },
             child: const Text(
               "COPY ALL",
