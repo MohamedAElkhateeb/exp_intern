@@ -22,25 +22,6 @@ class PaymentAlertCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: [
-        Container(
-          width: double.infinity,
-          height: 50.h,
-          decoration: BoxDecoration(
-            color: ColorsManager.black,
-            borderRadius: BorderRadius.circular(8.r),
-          ),
-          child: Center(
-            child: Text(
-              '${LocaleKeys.pay.tr()} $amountToPay ${LocaleKeys.to_activate_contract.tr()}',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.bold,
-                color: ColorsManager.white,
-              ),
-            ),
-          ),
-        ),
-        SizedBox(height: 16.h),
         Center(
           child: Column(
             children: [

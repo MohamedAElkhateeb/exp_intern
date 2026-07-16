@@ -78,4 +78,8 @@ class EndpointsManager {
       _getLocalizedPath('/Steps/StepDetailsByActionName');
   static String get contractSuccessData =>
       _getLocalizedPath('/HourlyContract/contractSuccessData');
+  static String get shopperResult =>
+      _getLocalizedPath('/Payment/ShopperResult');
+  static String get createPaymentCheckout =>
+      _getLocalizedPath('/Payment/CheckOutId');
 }

@@ -36,6 +36,8 @@ class ErrorHandler {
         return ServerFailure(
           message: exception.message,
         );
+      case DioExceptionType.transformTimeout:
+        throw UnimplementedError();
     }
   }
 }

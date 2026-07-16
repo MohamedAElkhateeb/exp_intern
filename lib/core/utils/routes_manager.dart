@@ -9,12 +9,14 @@ import 'package:exp_intern/features/auth/presentation/cubit/auth_cubit.dart';
 import 'package:exp_intern/features/auth/presentation/screen/forget_screen.dart';
 import 'package:exp_intern/features/auth/presentation/screen/login_screen.dart';
 import 'package:exp_intern/features/auth/presentation/screen/register_screen.dart';
+import 'package:flutter_hyperpay/flutter_hyperpay.dart';
 import '../../features/addresses/presentation/cubit/addresses_cubit.dart';
 import '../../features/addresses/presentation/screen/saved_addresses_screen.dart';
 import '../../features/auth/presentation/screen/new_password_screen.dart';
 import '../../features/home/presentation/screen/home_screen.dart';
 import '../../features/hourly_contract/presentation/screens/hourly_select_package_screen.dart';
 import '../../features/hourly_contract/presentation/screens/success_contract_screen.dart';
+import '../../features/payment/presentation/cubit/payment_cubit.dart';
 import '../../features/resource_groub/presentation/cubit/resource_group_cubit.dart';
 import '../../features/service/presentation/cubit/service_cubit.dart';
 import '../../features/service/presentation/screen/choose_service_screen.dart';
@@ -122,10 +124,14 @@ class RoutesManager {
     final stepEntity = args['stepEntity'] as DynamicStepEntity;
 
     return MaterialPageRoute(
-    builder: (_) => BlocProvider( create: (context) => sl<HourlyContractCubit>(),
-
-    child: SuccessContractScreen(stepEntity: stepEntity,)),
-    settings: settings,
+    builder: (_) => MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (context) => sl<HourlyContractCubit>()),
+        BlocProvider(create: (context) => sl<PaymentCubit>()),
+      ],
+      child: SuccessContractScreen(stepEntity: stepEntity,),
+    ),
+      settings: settings,
     );
     }
     return null;

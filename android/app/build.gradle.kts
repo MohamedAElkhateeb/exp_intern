@@ -38,6 +38,17 @@ android {
         }
     }
 }
+dependencies {
+    implementation(files("libs/oppwa.mobile-7.11.0-release.aar"))
+
+    debugImplementation(files("libs/ipworks3ds_sdk_9625.aar"))
+    releaseImplementation(files("libs/ipworks3ds_sdk_9625_deploy.aar"))
+
+    implementation("com.google.android.material:material:1.6.1")
+    implementation("androidx.appcompat:appcompat:1.5.1")
+    implementation("com.google.android.gms:play-services-wallet:19.1.0")
+    implementation("androidx.browser:browser:1.4.0")
+}
 
 flutter {
     source = "../.."

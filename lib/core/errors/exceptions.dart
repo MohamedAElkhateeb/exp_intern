@@ -35,6 +35,9 @@ class DioServerException extends ServerException {
         return  DioServerException(message: LocaleKeys.no_internet_error.tr());
       case DioExceptionType.unknown:
         return DioServerException(message: LocaleKeys.unexpected_error.tr());
+      case DioExceptionType.transformTimeout:
+        // TODO: Handle this case.
+        throw UnimplementedError();
     }
   }
 

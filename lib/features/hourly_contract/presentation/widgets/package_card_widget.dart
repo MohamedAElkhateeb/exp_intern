@@ -213,7 +213,7 @@ class PackageCardWidget extends StatelessWidget {
               Text(
                 '${LocaleKeys.totalPrice.tr()}: ${package.packagePrice?.toStringAsFixed(2) ?? '0.00'} ${LocaleKeys.sar.tr()}',
                 style: theme.textTheme.displayLarge?.copyWith(
-                  fontSize: 16.sp,
+                  fontSize: 15.sp,
                   fontWeight: FontWeight.bold,
                 ),
               ),

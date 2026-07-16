@@ -47,6 +47,11 @@ dependencies:
   injectable: ^3.0.0
 
 
+  flutter_hyperpay:
+    git:
+     url: "https://github.com/NoorTalaat/FlutterHyperpayPlugin.git"
+     ref: "fix_hyperpay_wiht_flutter-3.29"
+
 
 dev_dependencies:
   flutter_test:

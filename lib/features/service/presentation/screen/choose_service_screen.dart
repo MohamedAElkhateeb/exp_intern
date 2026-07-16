@@ -40,7 +40,6 @@ class _ChooseServiceScreenState extends State<ChooseServiceScreen> {
 
     return BlocListener<DynamicStepsCubit, DynamicStepsState>(
       listener: (context, state) {
-        // 👇 مراقبة حالة الـ fetch
         if (state.isLoading) {
           showDialog(
             context: context,
@@ -68,11 +67,9 @@ class _ChooseServiceScreenState extends State<ChooseServiceScreen> {
               'firstStepEntity': state.stepEntity,
             },
           );
-          // 👈 إعادة تعيين الحالة بعد التنقل
           context.read<DynamicStepsCubit>().resetState();
         }
 
-        // 👇 مراقبة حالة الـ submit (دي بتاعة الديالوج)
         if (state.isSubmitLoading) {
           showDialog(
             context: context,
@@ -92,7 +89,6 @@ class _ChooseServiceScreenState extends State<ChooseServiceScreen> {
           );
         } else if (state.isSubmitSuccess) {
           Navigator.pop(context);
-          // التعامل مع نجاح الـ submit هنا لو احتاجيت
         }
       },
       child: Scaffold(

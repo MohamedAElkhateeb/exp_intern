@@ -14,7 +14,6 @@ import 'hourly_contract_state.dart';
 class HourlyContractCubit extends Cubit<HourlyContractState> {
   final HourlyContractRepository _shiftRepo;
 
-  // ✅ منع التكرار من جوه الكيوبت نفسه
   String? _lastRequestKey;
 
   HourlyContractCubit(this._shiftRepo) : super(const HourlyContractState());

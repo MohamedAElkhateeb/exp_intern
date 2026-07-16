@@ -193,14 +193,12 @@ class _RequestInspectorState extends State<RequestInspector> {
       useRootNavigator: true,
       builder: (dialogContext) => AlertDialog(
         contentPadding: EdgeInsets.all(16.w),
-        // ✅ حط GestureDetector على الـ Content كله
         content: GestureDetector(
           onTap: () {
-            // ✅ ينسخ بس من غير ما يقفل الـ Dialog
             _copyToClipboard(e);
             NavigationService.showSnackBar("✅ Copied done");
           },
-          child: Container(
+          child: SizedBox(
             width: double.maxFinite,
             child: SingleChildScrollView(
               child: Directionality(
@@ -310,7 +308,6 @@ class _RequestInspectorState extends State<RequestInspector> {
           TextButton(
             onPressed: () {
               _copyToClipboard(e);
-              // ✅ من غير ما يقفل، بس ينسخ
               NavigationService.showSnackBar("✅ Copied done");
             },
             child: const Text(

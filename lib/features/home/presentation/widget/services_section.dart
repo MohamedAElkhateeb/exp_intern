@@ -58,6 +58,7 @@ class ServicesSection extends StatelessWidget {
             title: LocaleKeys.residential_service.tr(),
             subtitle: LocaleKeys.residential_service_desc.tr(),
             onTap: () {
+
             },
           ),
         ],

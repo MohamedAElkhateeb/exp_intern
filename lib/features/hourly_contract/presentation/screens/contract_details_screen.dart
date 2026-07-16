@@ -79,7 +79,6 @@ class _ContractDetailsScreenState extends State<ContractDetailsScreen> {
     super.dispose();
   }
 
-  // ✅ دالة مساعدة لتحديث الأيام
   void _updateSelectedDays(String date, bool isSelected) {
     setState(() {
       if (isSelected) {

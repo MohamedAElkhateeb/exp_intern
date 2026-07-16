@@ -42,6 +42,13 @@ import '../../features/hourly_contract/domain/repositories/hourly_contract_repos
     as _i488;
 import '../../features/hourly_contract/presentation/cubit/hourly_contract_cubit.dart'
     as _i769;
+import '../../features/payment/data/datasource/payment_remote_data_source.dart'
+    as _i726;
+import '../../features/payment/data/repositories/payment_repository_impl.dart'
+    as _i265;
+import '../../features/payment/domain/repositories/payment_repository.dart'
+    as _i639;
+import '../../features/payment/presentation/cubit/payment_cubit.dart' as _i513;
 import '../../features/resource_groub/data/data_source/nationality_remote_data_source.dart'
     as _i9;
 import '../../features/resource_groub/data/repositories/nationality_repository_impl.dart'
@@ -83,6 +90,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i273.HourlyContractRemoteDataSource>(
       () => _i273.HourlyContractRemoteDataSource(gh<_i921.ApiService>()),
     );
+    gh.lazySingleton<_i726.PaymentDataSource>(
+      () => _i726.PaymentDataSource(gh<_i921.ApiService>()),
+    );
     gh.lazySingleton<_i670.ServiceRemoteDataSource>(
       () => _i670.ServiceRemoteDataSource(gh<_i921.ApiService>()),
     );
@@ -121,6 +131,9 @@ extension GetItInjectableX on _i174.GetIt {
     gh.lazySingleton<_i1069.ServiceRepository>(
       () => _i953.ServiceRepositoryImpl(gh<_i670.ServiceRemoteDataSource>()),
     );
+    gh.lazySingleton<_i639.PaymentRepository>(
+      () => _i265.PaymentRepositoryImpl(gh<_i726.PaymentDataSource>()),
+    );
     gh.lazySingleton<_i1.AddressesRepository>(
       () =>
           _i837.AddressesRepositoryImpl(gh<_i737.AddressesRemoteDataSource>()),
@@ -139,6 +152,9 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i1.AddressesRepository>(),
         gh<_i973.TokenStorage>(),
       ),
+    );
+    gh.factory<_i513.PaymentCubit>(
+      () => _i513.PaymentCubit(gh<_i639.PaymentRepository>()),
     );
     return this;
   }
